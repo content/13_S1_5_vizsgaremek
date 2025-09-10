@@ -1,8 +1,10 @@
-# 13_S1_5_vizsgaremek
+# 13_S1_5_vizsgaremek - Studify
 ### Tagok: 
 - Vadkerti-Tóth Ádám <br>
 - Fülöp János Miklós
+
 ### Projekt:
-Többszalonos masszőri időpontfoglaló rendszer, amely adminisztrátori felülettel segíti a bővítést és az egyszerű napi működést.
+Egy kurzus kezelő felület, mely könnyíti a tanárok, és diákok munkáját. 
+
 ### Leírás:
-Ez a masszőri időpontfoglaló felület lehetővé teszi a vendégek számára, hogy gyorsan és kényelmesen foglaljanak időpontot több különböző szalon masszőreihez egyetlen platformon keresztül. A rendszer támogatja több szalon párhuzamos kezelését, beleértve az időpontok, szolgáltatások, masszőrök és helyszínek egyedi beállítását. Az adminisztrátori felület segítségével könnyedén bővíthető a szolgáltatás új szalonokkal vagy munkatársakkal, miközben az egyszerű és átlátható kezelőfelület biztosítja a hatékony napi működést.
+Ez a projekt a tanítást segítő programot a Google Classroom ihlette, ezáltal magába foglalja annak legfontosabb funkcióit, mint például a kurzusok létrehozását és kezelését, a feladatok kiadását és beadását, a fájlmegosztást, valamint a határidők nyomon követését. A rendszer célja, hogy egy központi, felhasználóbarát platformot biztosítson a tanárok és a diákok számára, ahol egyszerűen és átláthatóan kezelhetők a tananyagok, a feladatok, a kommunikáció és az értesítések. Emellett a fejlesztés során nagy hangsúlyt kap a könnyű használhatóság, a valós idejű frissítések és a különböző modulok (adatbázis, GUI, backend) összehangolt működése.
