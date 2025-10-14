@@ -1,0 +1,74 @@
+course:
+- id (PK)
+- name
+- invitation_code
+
+course_members:
+- PRIMARY KEY (course_id, user_id)
+- course_id (FK)
+- user_id (FK)
+- is_teacher
+
+users:
+- id (PK)
+- name
+- email
+- password
+- profile_picture
+- created_at
+
+posts:
+- id (PK)
+- course_id (FK)
+- name
+- description
+- post_type_id (FK)
+- deadline_at
+- is_edited
+- created_at
+
+comments:
+- id (PK)
+- post_id (FK)
+- sender_id (FK)
+- message
+- created_at
+
+post_types:
+- type_id (PK)
+- name
+
+submissions:
+- id (PK)
+- post_id (FK)
+- user_id (FK)
+- submitted_at
+
+background_attachments:
+- PRIMARY_KEY (course_id, attachment_id)
+- course_id (FK)
+- attachment_id (FK)
+
+submission_attachments:
+- PRIMARY KEY (submission_id, attachment_id)
+- submission_id (FK)
+- attachment_id (FK)
+
+posts_attachments:
+- PRIMARY KEY (post_id, attachment_id)
+- post_id (FK)
+- attachment_id (FK)
+
+attachments:
+- id (PK)
+- uploader_id (FK)
+- attachment_path
+- uploaded_at
+
+post_messages:
+- id (PK)
+- sender_id (FK)
+- recipient_id(FK)
+- message
+- post_id
+- created_at
