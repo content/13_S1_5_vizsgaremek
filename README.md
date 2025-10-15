@@ -1,7 +1,7 @@
 # 13_S1_5_vizsgaremek - Studify
 ### Tagok: 
 - Vadkerti-Tóth Ádám <br>
-- Fülöp János Miklós
+- Fülöp Miklós János
 
 ### Projekt:
 Egy kurzus kezelő felület, mely könnyíti a tanárok, és diákok munkáját. 
