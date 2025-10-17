@@ -42,7 +42,19 @@ submissions:
 - id (PK)
 - post_id (FK)
 - user_id (FK)
+- status_id (FK)
+- last_history_id (FK, nullable)
 - submitted_at
+
+submission_statuses:
+- id (PK)
+- name
+
+submission_histories:
+- id (PK)
+- submission_id (FK)
+- version_number
+- created_at
 
 background_attachments:
 - PRIMARY_KEY (course_id, attachment_id)
