@@ -4,7 +4,7 @@
 Table courses {
   id integer [primary key, not null]
   name varchar [not null]
-  invitation_code varchar
+  invitationCode varchar
 }
 
 Table course_members {
@@ -23,7 +23,7 @@ Table users {
   email varchar [unique, not null]
   password varchar [not null]
   profile_picture varchar
-  created_at timestamp [default: `CURRENT_TIMESTAMP`]
+  createdAt timestamp [default: `CURRENT_TIMESTAMP`]
 }
 
 Table posts {
@@ -34,7 +34,7 @@ Table posts {
   post_type_id integer [not null]
   deadline_at timestamp
   is_edited boolean [default: false]
-  created_at timestamp [default: `CURRENT_TIMESTAMP`]
+  createdAt timestamp [default: `CURRENT_TIMESTAMP`]
 }
 
 Table comments {
@@ -42,7 +42,7 @@ Table comments {
   post_id integer [not null]
   sender_id integer [not null]
   message text [not null]
-  created_at timestamp [default: `CURRENT_TIMESTAMP`]
+  createdAt timestamp [default: `CURRENT_TIMESTAMP`]
 }
 
 Table post_types {
@@ -56,7 +56,7 @@ Table submissions {
   user_id integer [not null]
   status_id integer [not null]
   last_history_id integer
-  submitted_at timestamp [default: `CURRENT_TIMESTAMP`]
+  submittedAt timestamp [default: `CURRENT_TIMESTAMP`]
 }
 
 Table submission_statuses {
@@ -67,8 +67,8 @@ Table submission_statuses {
 Table submission_histories {
   id integer [primary key, not null]
   submission_id integer [not null]
-  version_number integer [not null]
-  created_at timestamp [default: `CURRENT_TIMESTAMP`]
+  versionNumber integer [not null]
+  createdAt timestamp [default: `CURRENT_TIMESTAMP`]
 }
 
 Table background_attachments {
@@ -102,7 +102,7 @@ Table attachments {
   id integer [primary key, not null]
   uploader_id integer [not null]
   attachment_path varchar [not null]
-  uploaded_at timestamp [default: `CURRENT_TIMESTAMP`]
+  uploadedAt timestamp [default: `CURRENT_TIMESTAMP`]
 }
 
 Table post_messages {
@@ -111,7 +111,7 @@ Table post_messages {
   recipient_id integer [not null]
   message text [not null]
   post_id integer
-  created_at timestamp [default: `CURRENT_TIMESTAMP`]
+  createdAt timestamp [default: `CURRENT_TIMESTAMP`]
 }
 
 // ---------- RELATIONS ----------
