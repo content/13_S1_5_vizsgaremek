@@ -1,7 +1,7 @@
 // Use DBML to define your database structure
 // Docs: https://dbml.dbdiagram.io/docs
 
-Table course {
+Table courses {
   id integer [primary key, not null]
   name varchar [not null]
   invitation_code varchar
@@ -117,9 +117,9 @@ Table post_messages {
 // ---------- RELATIONS ----------
 
 // Courses
-Ref: course_members.course_id > course.id
-Ref: posts.course_id > course.id
-Ref: background_attachments.course_id > course.id
+Ref: course_members.course_id > courses.id
+Ref: posts.course_id > courses.id
+Ref: background_attachments.course_id > courses.id
 
 // Users
 Ref: course_members.user_id > users.id
@@ -136,7 +136,7 @@ Ref: submissions.post_id > posts.id
 Ref: posts_attachments.post_id > posts.id
 Ref: post_messages.post_id > posts.id
 
-// Attachments (egyedi, nem ismétlődő hivatkozások)
+// Attachments
 Ref: posts_attachments.attachment_id > attachments.id
 Ref: background_attachments.attachment_id > attachments.id
 Ref: submission_attachments.attachment_id > attachments.id
