@@ -1,0 +1,9 @@
+{
+  "compilerOptions": {
+    "baseUrl": ".",
+    "paths": {
+      "@studify/types": ["./packages/types/index.ts"],
+      "@studify/database": ["./packages/database/index.ts"]
+    }
+  }
+}

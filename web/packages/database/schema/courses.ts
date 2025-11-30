@@ -5,7 +5,7 @@ import { attachments } from './attachments';
 
 export const courses = mysqlTable('courses', {
     id: int('id').autoincrement().primaryKey(),
-    name: int('name').notNull(),
+    name: varchar('name', { length: 255 }).notNull(),
     invitationCode: varchar('invitation_code', { length: 9 }).notNull().unique(),
 });
 

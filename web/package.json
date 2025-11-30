@@ -1,12 +1,24 @@
 {
-  "dependencies": {
-    "dotenv": "^17.2.3",
-    "drizzle-orm": "^0.44.7",
-    "mysql2": "^3.15.3"
+  "name": "studify",
+  "private": true,
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev": "concurrently --prefix-colors blue,magenta --prefix {time}: --timestampFormat HH:mm:ss \"bun run dev --filter apps/ws\" \"bun run dev --filter apps/next\"",
+    "migrations:generate": "bun run --filter @studify/database drizzle-kit generate",
+    "migrations:push": "bun run --filter @studify/database drizzle-kit push",
+    "migrations:drop": "bun run --filter @studify/database drizzle-kit drop",
+    "migrations:migrate": "bun run --filter @studify/database drizzle-kit migrate"
   },
   "devDependencies": {
-    "@types/node": "^24.10.0",
-    "drizzle-kit": "^0.31.6",
-    "tsx": "^4.20.6"
+    "@types/node": "^22.13.9",
+    "concurrently": "^9.1.2",
+    "typescript": "^5.0.0"
+  },
+  "dependencies": {
+    "prettier": "^3.3.3",
+    "next": "15.2.2"
   }
 }
