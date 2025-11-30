@@ -1,6 +1,10 @@
+import { Course } from "./course";
+
 export interface User {
     id: number;
-    username: string;
-    profilePicturePath: string | null;
-    createdAt: Date;
+    name: string;
+    email: string;
+    profile_picture: string | null;
+    courses: Course[];
+    created_at: Date;
 }

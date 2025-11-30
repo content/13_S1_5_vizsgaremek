@@ -3,7 +3,7 @@ import { Inter } from "next/font/google"
 import type React from "react"
 import "./globals.css"
 
-import { SessionProvider } from "next-auth/react"
+import NextAuthProvider from './providers/session-provider';
 
 export const metadata: Metadata = {
   description: "Studify",
@@ -17,13 +17,13 @@ export const metadata: Metadata = {
 
 const inter = Inter({ subsets: ["latin"] })
 
-export default function RootLayout({children,}: {children: React.ReactNode}, pageProps: {session, ...pageProps}) {
+export default function RootLayout({children,}: {children: React.ReactNode}) {
   return (
     <html lang="hu" className={`${inter.className}`}>
       <body className={`overflow-x-hidden`}>
-          <SessionProvider session={pageProps.session}>
+          <NextAuthProvider>
             {children}
-          </SessionProvider>
+          </NextAuthProvider>
       </body>
     </html>
   )

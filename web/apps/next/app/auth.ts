@@ -1,14 +1,15 @@
-import { getUser } from '@studify/database';
+import { getCoursesByUserId, getPassword, getUser } from '@studify/database';
 import { comparePasswords } from '@/lib/encryption/encryption';
-import NextAuth, { Session, User } from 'next-auth';
+import NextAuth from 'next-auth';
+import type { AuthOptions, Session } from "next-auth";
 import Credentials from 'next-auth/providers/credentials';
 
-export const { auth, handlers, signIn, signOut } = NextAuth({
+export const authConfig: AuthOptions = {
     providers: [
         Credentials({
             name: 'Bejelentkezés e-mail/jelszó párossal',
             credentials: {
-                username: {
+                email: {
                     label: 'E-mail cím',
                     type: 'text',
                     placeholder: 'pl. user@example.com',
@@ -19,23 +20,31 @@ export const { auth, handlers, signIn, signOut } = NextAuth({
                 },
             },
             async authorize(credentials, req) {
-                const { username, password } = credentials ?? {};
+                const { email, password } = credentials ?? {};
 
-                if (!username || !password) {
+                if (!email || !password) {
                     return null;
                 }
 
-                const user = (await getUser(username as string)) as User | undefined;
+                const user = (await getUser(email as string)) || undefined;
 
                 if (!user) {
                     return null;
-                }
+                } 
 
-                if (!(await comparePasswords(password.toString(), user.password))) {
+                const storedPassword = await getPassword(email as string);
+
+                if (!storedPassword || !(await comparePasswords(password.toString(), storedPassword))) {
                     return null;
                 }
 
-                return user;
+                return {
+                    id: user.id.toString(),
+                    name: user.name,
+                    email: user.email,
+                    profile_picture_path: user.profilePicture,
+                    created_at: user.createdAt,
+                };
             },
         }),
     ],
@@ -49,38 +58,47 @@ export const { auth, handlers, signIn, signOut } = NextAuth({
     },
     callbacks: {
         async session({ session, token }: { session: Session; token: any }) {
-            // session.user.id = token.id;
-            // session.user.username = token.username;
-            // session.user.password = token.password;
-            // session.user.bio = token.bio;
-            // session.user.avatar = token.avatar;
-            // session.user.created_at = token.created_at;
-            // session.user.updated_at = token.updated_at;
-            // const quizzes: Quiz[] = await getQuizzesByCreatorId(token.id);
-            // session.user.quizzes = quizzes;
+            session.user = session.user || ( {
+                id: null,
+                name: null,
+                email: null,
+                courses: [],
+                profile_picture_path: null,
+            } as any );
+            
+            const user = session.user as any;
+            
+            user.id = token.id;
+            user.name = token.name;
+            user.email = token.email;
+            user.profile_picture_path = token.profile_picture_path;
+            user.created_at = token.created_at;
+            
+            const courses = token.courses || await getCoursesByUserId(token.id);
+            user.courses = courses;
+            
             return session;
         },
 
         async jwt({ token, trigger, user, session }: any) {
             if (user) {
-                // token.id = user.id;
-                // token.username = user.username;
-                // token.password = user.password;
-                // token.bio = user.bio;
-                // token.avatar = user.avatar;
-                // token.created_at = user.created_at;
-                // token.updated_at = user.updated_at;
-                // const quizzes: Quiz[] = await getQuizzesByCreatorId(user.id);
-                // token.quizzes = quizzes;
+                token.id = user.id;
+                token.name = user.name;
+                token.email = user.email;
+                token.profile_picture_path = user.profile_picture_path;
+                token.created_at = user.created_at;
+
+                const courses = await getCoursesByUserId(user.id);
+                token.courses = courses;
             }
             if (trigger === 'update') {
-                // token.password = session.password;
-                // token.avatar = session.avatar;
-                // token.bio = session.bio;
+                token.name = session.name;
+                token.email = session.email;
+                token.profile_picture_path = session.profile_picture_path;
             }
 
             return token;
         },
     },
     secret: process.env.NEXTAUTH_SECRET,
-});
+};
