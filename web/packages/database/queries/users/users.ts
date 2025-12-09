@@ -1,13 +1,56 @@
+import * as bcrypt from 'bcryptjs';
+import { User } from "@studify/types";
 import { and, eq } from "drizzle-orm";
 import { db } from "../../mysql";
-import { users } from "../../schema/users";
+import { profilePictureAttachments, users } from "../../schema/users";
+import { createAttachment, createRelation } from "../attachments/attachments";
 import { getCoursesByUserId } from "../courses/courses";
-import { User } from "@studify/types";
+import { attachments } from '../../schema/attachments';
 
-export async function createUser(email: string, password: string, firstName: string, lastName: string, profilePicture: string): Promise<User | null> {
+export async function createUser(email: string, password: string, firstName: string, lastName: string, profilePicturePath: string | null): Promise<User | null> {
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    const results = await db
+        .insert(users)
+        .values({
+            email,
+            password: hashedPassword,
+            firstName,
+            lastName
+        })
+        .execute();
     
-    const result = await db
-        .insert(users);
+    const userId = results[0].insertId;
+    
+    if(!(typeof userId === 'number')) {
+        return null;
+    }
+
+    if(profilePicturePath) {
+        await updateProfilePicture(userId, profilePicturePath);
+    }
+    
+    return await getUser(email);
+}
+
+export async function updateProfilePicture(userId: number, profilePicturePath: string): Promise<boolean> {
+    const currentRelation = (await db
+        .select()
+        .from(profilePictureAttachments)
+        .where(eq(profilePictureAttachments.userId, userId))
+        .execute())[0];
+
+    if(currentRelation) {
+        await db
+            .delete(profilePictureAttachments)
+            .where(eq(profilePictureAttachments.userId, userId))
+            .execute();
+    }
+    
+    const attachmentId = await createAttachment(userId, profilePicturePath);
+    const relation = await createRelation({foreignId: userId, attachmentId, table: profilePictureAttachments});
+    
+    return typeof relation === 'number';
 }
 
 export async function isEmailFree(email: string): Promise<boolean> {
@@ -36,7 +79,7 @@ export async function getPassword(email: string): Promise<string | null> {
     return user[0].password;
 }
 
-export async function getUser(email: string) {
+export async function getUser(email: string): Promise<User | null> {
     const user = await db
         .select()
         .from(users)
@@ -50,13 +93,45 @@ export async function getUser(email: string) {
     const userObj = user[0];
 
     if (typeof userObj.id !== 'number') {
-        return;
+        return null;
     }
 
     const courses = await getCoursesByUserId(userObj.id);
+    const profilePicture = await getProfilePictureByUserId(userObj.id);
 
     return {
-        ...userObj,
-        courses
+        id: userObj.id,
+        first_name: userObj.firstName,
+        last_name: userObj.lastName,
+        email: userObj.email,
+        profile_picture: profilePicture,
+        courses: courses,
+        created_at: userObj.createdAt
     };
+}
+
+export async function getProfilePictureByUserId(userId: number): Promise<string | null> {
+    const relation = await db
+        .select()
+        .from(profilePictureAttachments)
+        .where(eq(profilePictureAttachments.userId, userId))
+        .execute();
+
+    if (relation.length === 0) {
+        return null;
+    }
+
+    const attachmentId = relation[0].attachmentId;
+
+    const attachment = await db
+        .select()
+        .from(attachments)
+        .where(eq(attachments.id, attachmentId))
+        .execute();
+
+    if (attachment.length === 0) {
+        return null;
+    }
+
+    return attachment[0].path;
 }

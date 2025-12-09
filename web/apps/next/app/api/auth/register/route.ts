@@ -1,33 +1,53 @@
 import { NextResponse, NextRequest } from 'next/server';
 import { validateEmail, validateName, validatePassword } from '@/lib/validators/credentials';
-import { createUser } from '@studify/database';
+import { createUser, getUser } from '@studify/database';
+import { Messages } from '@/lib/localization/messages';
 
 export async function POST(request: NextRequest) {
-    const { email, password, firstName, lastName, profilePicture } = await request.json();
+    const { email, password, firstName, lastName, profilePictureUrl } = await request.formData().then((data) => {
+        return {
+            email: data.get('email') as string,
+            password: data.get('password') as string,
+            firstName: data.get('firstName') as string,
+            lastName: data.get('lastName') as string,
+            profilePictureUrl: data.get('profile_picture') as string | null,
+        };
+    });
+
+    if(await getUser(email)) {
+        return NextResponse.json({ error: Messages.Auth_Register_EmailAlreadyInUse }, { status: 400 });
+    }
 
     if(!validateEmail(email)) {
-        return NextResponse.json({ error: 'Invalid email address' }, { status: 400 });
+        return NextResponse.json({ error: Messages.Auth_Register_InvalidEmail }, { status: 400 });
     }
 
     if(!validateName(firstName) || !validateName(lastName)) {
-        return NextResponse.json({ error: 'Invalid name provided' }, { status: 400 });
+        return NextResponse.json({ error: Messages.Auth_Register_InvalidName }, { status: 400 });
     }
 
     if(!validatePassword(password)) {
-        return NextResponse.json({ error: 'Password does not meet criteria' }, { status: 400 });
+        return NextResponse.json({ error: Messages.Auth_Register_WeakPassword }, { status: 400 });
     }
 
     try {
-        await createUser(
+        const user = await createUser(
             email,
             password,
             firstName,
             lastName,
-            profilePicture,
+            profilePictureUrl,
         );
 
-        return NextResponse.json({ message: 'User registered successfully' }, { status: 201 }); 
+        return NextResponse.json({ 
+            message: 'User registered successfully', 
+            user 
+        }, { status: 201 }); 
     } catch (error) {
-        return NextResponse.json({ error: 'Error registering user' }, { status: 500 });
+        console.error('Error registering user:', error);
+        
+        return NextResponse.json({ 
+            error: Messages.Auth_Register_ServerError 
+        }, { status: 500 });
     }
 }

@@ -13,6 +13,7 @@ export const usersRelations = relations(users, ({ many, one }) => ({
   uploadedAttachments: many(attachments),
   sentMessages: many(postMessages, { relationName: 'sender' }),
   receivedMessages: many(postMessages, { relationName: 'recipient' }),
+  profilePictureAttachment: one(profilePictureAttachments, { fields: [users.id], references: [profilePictureAttachments.userId] })
 }));
 
 export const submissionsRelations = relations(submissions, ({ one, many }) => ({

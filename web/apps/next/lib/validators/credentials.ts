@@ -11,7 +11,6 @@ export function validateEmail(email: string): boolean {
 }
 
 export function validateName(username: string): boolean {
-    // Alphanumeric characters, 3-16 characters long
-    const re = /^[a-zA-Z0-9]{3,16}$/;
+    const re = /^[a-zA-ZáéíóöőúüűÁÉÍÓÖŐÚÜŰ\s-]{3,32}$/;
     return re.test(username);
 }

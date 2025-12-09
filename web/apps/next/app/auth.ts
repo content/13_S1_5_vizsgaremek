@@ -38,13 +38,7 @@ export const authConfig: AuthOptions = {
                     return null;
                 }
 
-                return {
-                    id: user.id.toString(),
-                    name: user.name,
-                    email: user.email,
-                    profile_picture_path: user.profilePicture,
-                    created_at: user.createdAt,
-                };
+                return user;
             },
         }),
     ],
@@ -60,18 +54,21 @@ export const authConfig: AuthOptions = {
         async session({ session, token }: { session: Session; token: any }) {
             session.user = session.user || ( {
                 id: null,
-                name: null,
+                first_name: null,
+                last_name: null,
                 email: null,
                 courses: [],
-                profile_picture_path: null,
+                profile_picture: null,
+                created_at: null,
             } as any );
             
             const user = session.user as any;
             
             user.id = token.id;
-            user.name = token.name;
+            user.first_name = token.first_name;
+            user.last_name = token.last_name;
             user.email = token.email;
-            user.profile_picture_path = token.profile_picture_path;
+            user.profile_picture = token.profile_picture;
             user.created_at = token.created_at;
             
             const courses = token.courses || await getCoursesByUserId(token.id);
@@ -83,18 +80,20 @@ export const authConfig: AuthOptions = {
         async jwt({ token, trigger, user, session }: any) {
             if (user) {
                 token.id = user.id;
-                token.name = user.name;
+                token.first_name = user.first_name;
+                token.last_name = user.last_name;
                 token.email = user.email;
-                token.profile_picture_path = user.profile_picture_path;
+                token.profile_picture = user.profile_picture;
                 token.created_at = user.created_at;
 
                 const courses = await getCoursesByUserId(user.id);
                 token.courses = courses;
             }
             if (trigger === 'update') {
-                token.name = session.name;
+                token.first_name = session.first_name;
+                token.last_name = session.last_name;
                 token.email = session.email;
-                token.profile_picture_path = session.profile_picture_path;
+                token.profile_picture = session.profile_picture;
             }
 
             return token;
