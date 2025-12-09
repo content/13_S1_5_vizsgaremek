@@ -4,6 +4,12 @@ import { users } from "../../schema/users";
 import { getCoursesByUserId } from "../courses/courses";
 import { User } from "@studify/types";
 
+export async function createUser(email: string, password: string, firstName: string, lastName: string, profilePicture: string): Promise<User | null> {
+    
+    const result = await db
+        .insert(users);
+}
+
 export async function isEmailFree(email: string): Promise<boolean> {
     const user = await db
         .select()

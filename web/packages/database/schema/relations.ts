@@ -1,5 +1,5 @@
 import { relations } from 'drizzle-orm';
-import { users } from './users';
+import { users, profilePictureAttachments } from './users';
 import { posts } from './posts';
 import { submissions, submissionHistories, submissionStatuses, submissionAttachments } from './submissions';
 import { courses, coursesMembers, backgroundAttachments } from './courses';
