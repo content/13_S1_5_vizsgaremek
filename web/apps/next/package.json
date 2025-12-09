@@ -52,6 +52,7 @@
     "expo-asset": "latest",
     "expo-file-system": "latest",
     "expo-gl": "latest",
+    "framer-motion": "^12.23.25",
     "html-react-parser": "^5.2.6",
     "input-otp": "1.4.1",
     "lexical": "^0.34.0",

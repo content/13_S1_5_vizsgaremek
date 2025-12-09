@@ -4,6 +4,7 @@ import type React from "react"
 import "./globals.css"
 
 import NextAuthProvider from './providers/session-provider';
+import { NotificationProvider } from "@/components/notification-provider";
 import { ThemeProvider } from "@/components/theme-provider";
 
 export const metadata: Metadata = {
@@ -30,7 +31,9 @@ export default function RootLayout({children,}: {children: React.ReactNode}) {
               enableSystem
               disableTransitionOnChange
             >
-              {children}
+              <NotificationProvider>
+                {children}
+              </NotificationProvider>
             </ThemeProvider>
           </NextAuthProvider>
       </body>

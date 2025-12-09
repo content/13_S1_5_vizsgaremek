@@ -1,11 +1,26 @@
+"use client";
+
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { ThemeToggle } from "@/components/theme-toggle"
 import { BookOpen, Users, Calendar, FileText, ArrowRight, Check, GraduationCap } from "lucide-react"
 import Head from "next/head"
+import { useSession } from "next-auth/react"
+import { useEffect } from "react"
+import { useRouter } from "next/navigation";
 
 export default function LandingPage() {
+  const router = useRouter();
+  const { data: session } = useSession();
+  
+
+  useEffect(() => {
+    if (session) {
+      router.push('/dashboard');       
+    }
+  }, [session]);
+
   return (
     <div>
       <Head>
