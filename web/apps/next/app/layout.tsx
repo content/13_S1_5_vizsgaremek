@@ -4,8 +4,10 @@ import type React from "react"
 import "./globals.css"
 
 import NextAuthProvider from './providers/session-provider';
+import { ThemeProvider } from "@/components/theme-provider";
 
 export const metadata: Metadata = {
+  title: "Studify - Az okos tanulási társ",
   description: "Studify",
   keywords: ["Studify", "Learning", "Education", "Productivity"],
   authors: [
@@ -19,10 +21,17 @@ const inter = Inter({ subsets: ["latin"] })
 
 export default function RootLayout({children,}: {children: React.ReactNode}) {
   return (
-    <html lang="hu" className={`${inter.className}`}>
+    <html lang="hu" className={`${inter.className}`} suppressHydrationWarning>
       <body className={`overflow-x-hidden`}>
           <NextAuthProvider>
-            {children}
+            <ThemeProvider 
+              attribute="class"
+              defaultTheme="system" 
+              enableSystem
+              disableTransitionOnChange
+            >
+              {children}
+            </ThemeProvider>
           </NextAuthProvider>
       </body>
     </html>

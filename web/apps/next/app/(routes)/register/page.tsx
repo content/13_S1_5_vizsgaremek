@@ -1,13 +1,22 @@
 "use client"
-
 import React from "react"
+import Link from "next/link"
+import { Button } from "@/components/ui/button"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { ThemeToggle } from "@/components/theme-toggle"
+import { GraduationCap } from "lucide-react"
+
 import { UploadButton, UploadDropzone } from "@/components/uploadthing/uploadthing";
+import Head from "next/head"
 
 export default function RegisterPage() {
     const [firstName, setFirstName] = React.useState("")
     const [lastName, setLastName] = React.useState("")
     const [email, setEmail] = React.useState("")
     const [password, setPassword] = React.useState("")
+    const [confirmationPassword, setConfirmationPassword] = React.useState("")
     const [profilePicture, setProfilePicture] = React.useState<string | null>(null)
 
 
@@ -25,36 +34,95 @@ export default function RegisterPage() {
         }
 
         try {
-            const response = await fetch('/api/register', {
+            const response = await fetch('/api/auth/register', {
                 method: 'POST',
                 body: formData,
             });
+
+            console.log(await response.json())
         } catch (error) {
             console.error('Error registering user:', error);
         }
     }
 
     return (
-        <div>
-            Register Page
-            <form action="" onSubmit={(e) => registerUser(e)}>
-                <input type="text" name="firstName" placeholder="First Name" onChange={(e) => setFirstName(e.target.value)}/>
-                <input type="text" name="lastName" placeholder="Last Name" onChange={(e) => setLastName(e.target.value)}/>
-                <input type="email" name="email" placeholder="Email" onChange={(e) => setEmail(e.target.value)}/>
-                <input type="password" name="password" placeholder="Password" onChange={(e) => setPassword(e.target.value)}/>
-                <UploadButton 
-                    endpoint={"imageUploader"}
-                    onClientUploadComplete={(res) => {
-                        const url = res[0].ufsUrl
-                        setProfilePicture(url)
-                        alert("Upload Completed");
-                    }}
-                    onUploadError={(error: Error) => {
-                        alert(`ERROR! ${error.message}`);
-                    }}
-                />
-                <button type="submit">Register</button>
-            </form>
-        </div>
+    <div className="min-h-screen bg-background flex flex-col">
+        <Head>
+            <title>Regisztráció - Studify</title>
+            <meta property="og:title" content="Regisztráció - Studify" key="title" />
+        </Head>
+        {/* Header */}
+        <header className="border-b border-border bg-card/50 backdrop-blur-sm">
+            <div className="container mx-auto px-4 py-4 flex items-center justify-between">
+            <Link href="/" className="flex items-center gap-2">
+                <div className="h-8 w-8 rounded-lg bg-green-500 flex items-center justify-center">
+                    <GraduationCap className="h-5 w-5 text-primary-foreground" />
+                </div>
+                <span className="text-xl font-semibold">Studify</span>
+            </Link>
+            <ThemeToggle />
+            </div>
+        </header>
+
+        {/* Main Content */}
+        <main className="flex-1 flex items-center justify-center px-4 py-12">
+            <Card className="w-full max-w-md border-border">
+            <CardHeader className="space-y-1">
+                <CardTitle className="text-2xl font-bold">Regisztráció</CardTitle>
+                <CardDescription>Csatlakozz a Studify közösségéhez!</CardDescription>
+            </CardHeader>
+            <CardContent>
+                <form className="space-y-4" onSubmit={registerUser}>
+                <div className="grid grid-cols-2 gap-4">
+                    
+                    <div className="space-y-2">
+                    <Label htmlFor="lastName">Vezetéknév</Label>
+                    <Input id="lastName" type="text" placeholder="Fülöp" className="bg-background" required onChange={(e) => setLastName(e.target.value)}/>
+                    </div>
+                    <div className="space-y-2">
+                    <Label htmlFor="firstName">Keresztnév</Label>
+                    <Input id="firstName" type="text" placeholder="Miklós János" className="bg-background" required onChange={(e) => setFirstName(e.target.value)}/>
+                    </div>
+                </div>
+                <div className="space-y-2">
+                    <Label htmlFor="email">Email</Label>
+                    <Input id="email" type="email" placeholder="fulop.miklos.janos@diak.szbi-pg.hu" className="bg-background" required onChange={(e) => setEmail(e.target.value)}/>
+                </div>
+                <div className="space-y-2">
+                    <Label htmlFor="password">Password</Label>
+                    <Input id="password" type="password" placeholder="••••••••" className="bg-background" required onChange={(e) => setPassword(e.target.value)} />
+                </div>
+                <div className="space-y-2">
+                    <Label htmlFor="confirmPassword">Jelszó megerősítése</Label>
+                    <Input id="confirmPassword" type="password" placeholder="••••••••" className="bg-background" required onChange={(e) => setConfirmationPassword(e.target.value)}/>
+                </div>
+                {/* <div className="flex items-start space-x-2">
+                    <input type="checkbox" id="terms" className="mt-1 h-4 w-4 rounded border-border" required />
+                    <label htmlFor="terms" className="text-sm text-muted-foreground leading-none">
+                    I agree to the{" "}
+                    <Link href="#" className="text-primary hover:text-primary/80 transition-colors">
+                        Terms of Service
+                    </Link>{" "}
+                    and{" "}
+                    <Link href="#" className="text-primary hover:text-primary/80 transition-colors">
+                        Privacy Policy
+                    </Link>
+                    </label>
+                </div> */}
+                <Button type="submit" className="bg-green-500 hover:bg-green-600 w-full">
+                    Regisztráció
+                </Button>
+                </form>
+
+                <div className="mt-6 text-center text-sm">
+                <span className="text-muted-foreground">Van már fiókod?</span>{" "}
+                <Link href="/login" className="text-green-400 hover:text-green-500 font-medium transition-colors">
+                    Jelenkezz be!
+                </Link>
+                </div>
+            </CardContent>
+            </Card>
+        </main>
+    </div>
     )
 }
