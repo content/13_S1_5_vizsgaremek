@@ -9,6 +9,7 @@ import Head from "next/head"
 import { useSession } from "next-auth/react"
 import { useEffect } from "react"
 import { useRouter } from "next/navigation";
+import LandingHeader from "@/components/elements/landing-header";
 
 export default function LandingPage() {
   const router = useRouter();
@@ -29,37 +30,7 @@ export default function LandingPage() {
       </Head>
       <div className="min-h-screen bg-background">
         {/* Header */}
-        <header className="border-b border-border bg-card/50 backdrop-blur-sm sticky top-0 z-50">
-          <div className="container mx-auto px-4 py-4 flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <div className="h-8 w-8 rounded-lg bg-green-500 flex items-center justify-center">
-                <GraduationCap className="h-5 w-5 text-green-400-foreground" />
-              </div>
-              <span className="text-xl font-semibold">Studify</span>
-            </div>
-            <nav className="hidden md:flex items-center gap-6">
-              <Link href="#features" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
-                Features
-              </Link>
-              <Link href="#pricing" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
-                Pricing
-              </Link>
-              <Link href="#about" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
-                About
-              </Link>
-            </nav>
-            <div className="flex items-center gap-2">
-              <ThemeToggle />
-              <Button variant="ghost" asChild>
-                <Link href="/login">Bejelentkezés</Link>
-              </Button>
-              <Button className="bg-green-500 hover:bg-green-600" asChild>
-                <Link href="/register">Regisztráció</Link>
-              </Button>
-            </div>
-          </div>
-        </header>
-
+        <LandingHeader />
         {/* Hero Section */}
         <section className="container mx-auto px-4 py-20 md:py-32">
           <div className="max-w-4xl mx-auto text-center">

@@ -12,6 +12,7 @@ import { UploadButton, UploadDropzone } from "@/components/uploadthing/uploadthi
 import Head from "next/head"
 import { useNotificationProvider } from "@/components/notification-provider"
 import { useRouter } from "next/navigation"
+import LandingHeader from "@/components/elements/landing-header"
 
 export default function RegisterPage() {
     const router = useRouter();
@@ -52,7 +53,7 @@ export default function RegisterPage() {
                     break;
                 case 400:
                     const data = await response.json();
-                    notify("Hiba a regisztráció során!", { type: "error", description: data.message || "Próbáld újra később!" });
+                    notify("Hiba a regisztráció során!", { type: "error", description: data.error || "Próbáld újra később!" });
                     break;
                 case 500:
                     notify("Szerver hiba!", { type: "error", description: "Próbáld újra később!" });
@@ -74,17 +75,7 @@ export default function RegisterPage() {
             <meta property="og:title" content="Regisztráció - Studify" key="title" />
         </Head>
         {/* Header */}
-        <header className="border-b border-border bg-card/50 backdrop-blur-sm">
-            <div className="container mx-auto px-4 py-4 flex items-center justify-between">
-            <Link href="/" className="flex items-center gap-2">
-                <div className="h-8 w-8 rounded-lg bg-green-500 flex items-center justify-center">
-                    <GraduationCap className="h-5 w-5 text-primary-foreground" />
-                </div>
-                <span className="text-xl font-semibold">Studify</span>
-            </Link>
-            <ThemeToggle />
-            </div>
-        </header>
+        <LandingHeader />
 
         {/* Main Content */}
         <main className="flex-1 flex items-center justify-center px-4 py-12">
