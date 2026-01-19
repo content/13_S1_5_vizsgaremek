@@ -10,8 +10,15 @@ import { GraduationCap } from "lucide-react"
 
 import { UploadButton, UploadDropzone } from "@/components/uploadthing/uploadthing";
 import Head from "next/head"
+import { useNotificationProvider } from "@/components/notification-provider"
+import { useRouter } from "next/navigation"
+import LandingHeader from "@/components/elements/landing-header"
 
 export default function RegisterPage() {
+    const router = useRouter();
+    const { notify } = useNotificationProvider();
+
+    const [isRegisterBtnDisabled, setIsRegisterBtnDisabled] = React.useState(false)
     const [firstName, setFirstName] = React.useState("")
     const [lastName, setLastName] = React.useState("")
     const [email, setEmail] = React.useState("")
@@ -39,9 +46,25 @@ export default function RegisterPage() {
                 body: formData,
             });
 
-            console.log(await response.json())
+            switch(response.status) {
+                case 201:
+                    notify("Sikeres regisztráció!", { type: "success", description: "Most már bejelentkezhetsz a fiókodba." });
+                    router.push("/login");
+                    break;
+                case 400:
+                    const data = await response.json();
+                    notify("Hiba a regisztráció során!", { type: "error", description: data.error || "Próbáld újra később!" });
+                    break;
+                case 500:
+                    notify("Szerver hiba!", { type: "error", description: "Próbáld újra később!" });
+                    break;
+                default:
+                    notify("Ismeretlen hiba!", { type: "error", description: "Próbáld újra később!" });
+                    break;
+            }
         } catch (error) {
-            console.error('Error registering user:', error);
+            notify("Hiba a regisztráció során!", { type: "error", description: "Próbáld újra később!" });
+            console.error("Registration error:", error);
         }
     }
 
@@ -52,17 +75,7 @@ export default function RegisterPage() {
             <meta property="og:title" content="Regisztráció - Studify" key="title" />
         </Head>
         {/* Header */}
-        <header className="border-b border-border bg-card/50 backdrop-blur-sm">
-            <div className="container mx-auto px-4 py-4 flex items-center justify-between">
-            <Link href="/" className="flex items-center gap-2">
-                <div className="h-8 w-8 rounded-lg bg-green-500 flex items-center justify-center">
-                    <GraduationCap className="h-5 w-5 text-primary-foreground" />
-                </div>
-                <span className="text-xl font-semibold">Studify</span>
-            </Link>
-            <ThemeToggle />
-            </div>
-        </header>
+        <LandingHeader />
 
         {/* Main Content */}
         <main className="flex-1 flex items-center justify-center px-4 py-12">
@@ -96,6 +109,32 @@ export default function RegisterPage() {
                     <Label htmlFor="confirmPassword">Jelszó megerősítése</Label>
                     <Input id="confirmPassword" type="password" placeholder="••••••••" className="bg-background" required onChange={(e) => setConfirmationPassword(e.target.value)}/>
                 </div>
+                <div className="space-y-2">
+                    <Label htmlFor="">Profilkép feltöltése</Label>
+                    <UploadDropzone
+                        className="border-border bg-background hover:bg-accent/50 transition-colors"
+                        endpoint="imageUploader"
+                        onClientUploadComplete={(res) => {
+                            const url = res[0]?.ufsUrl;
+                            if(url) {
+                                notify("Sikeres feltöltés!", { type: "success", description: "A profilképed sikeresen feltöltve." });
+                                setProfilePicture(res[0]?.ufsUrl || null);
+                            }
+
+                            setIsRegisterBtnDisabled(false);
+                        }}
+
+                        onUploadProgress={(progress) => {
+                            console.log(`Upload Progress: ${progress}%`);
+                            setIsRegisterBtnDisabled(progress < 100);
+                        }}
+
+                        onUploadError={(error: Error) => {
+                            notify("Hiba a kép feltöltése során!", { type: "error", description: "Próbáld újra később!" });
+                            setIsRegisterBtnDisabled(false);
+                        }}
+                    />
+                </div>
                 {/* <div className="flex items-start space-x-2">
                     <input type="checkbox" id="terms" className="mt-1 h-4 w-4 rounded border-border" required />
                     <label htmlFor="terms" className="text-sm text-muted-foreground leading-none">
@@ -109,7 +148,7 @@ export default function RegisterPage() {
                     </Link>
                     </label>
                 </div> */}
-                <Button type="submit" className="bg-green-500 hover:bg-green-600 w-full">
+                <Button type="submit" disabled={isRegisterBtnDisabled} className="bg-green-500 hover:bg-green-600 w-full">
                     Regisztráció
                 </Button>
                 </form>

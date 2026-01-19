@@ -12,6 +12,7 @@ import { Label } from "@/components/ui/label"
 import { ThemeToggle } from "@/components/theme-toggle"
 import { GraduationCap } from "lucide-react"
 import { useRouter } from "next/navigation";
+import LandingHeader from "@/components/elements/landing-header";
 
 export function LoginPage() {
     const router = useRouter();
@@ -53,17 +54,7 @@ export function LoginPage() {
             </Head>
             <div className="min-h-screen bg-background flex flex-col">
             {/* Header */}
-            <header className="border-b border-border bg-card/50 backdrop-blur-sm">
-                <div className="container mx-auto px-4 py-4 flex items-center justify-between">
-                <Link href="/" className="flex items-center gap-2">
-                    <div className="h-8 w-8 rounded-lg bg-green-500 flex items-center justify-center">
-                    <GraduationCap className="h-5 w-5 text-primary-foreground" />
-                    </div>
-                    <span className="text-xl font-semibold">Studify</span>
-                </Link>
-                <ThemeToggle />
-                </div>
-            </header>
+            <LandingHeader />
 
             {/* Main Content */}
             <main className="flex-1 flex items-center justify-center px-4 py-12">
