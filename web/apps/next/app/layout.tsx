@@ -31,6 +31,7 @@ export default function RootLayout({children,}: {children: React.ReactNode}) {
               enableSystem
               disableTransitionOnChange
             >
+
               <NotificationProvider>
                 {children}
               </NotificationProvider>

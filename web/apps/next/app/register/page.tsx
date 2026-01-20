@@ -125,7 +125,6 @@ export default function RegisterPage() {
                         }}
 
                         onUploadProgress={(progress) => {
-                            console.log(`Upload Progress: ${progress}%`);
                             setIsRegisterBtnDisabled(progress < 100);
                         }}
 

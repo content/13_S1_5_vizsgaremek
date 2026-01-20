@@ -71,7 +71,7 @@ export const authConfig: AuthOptions = {
             user.profile_picture = token.profile_picture;
             user.created_at = token.created_at;
             
-            const courses = token.courses || await getCoursesByUserId(token.id);
+            const courses = await getCoursesByUserId(token.id);
             user.courses = courses;
             
             return session;

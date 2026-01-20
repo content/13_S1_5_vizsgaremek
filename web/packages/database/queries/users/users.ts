@@ -110,6 +110,57 @@ export async function getUser(email: string): Promise<User | null> {
     };
 }
 
+export async function getUserById(userId: number): Promise<User | null> {
+    const user = await db
+        .select()
+        .from(users)
+        .where(and(eq(users.id, userId)))
+        .execute();
+
+    if (user.length === 0) {
+        return null;
+    }
+
+    const userObj = user[0];
+    const courses = await getCoursesByUserId(userObj.id);
+    const profilePicture = await getProfilePictureByUserId(userObj.id);
+
+    return {
+        id: userObj.id,
+        first_name: userObj.firstName,
+        last_name: userObj.lastName,
+        email: userObj.email,
+        profile_picture: profilePicture,
+        courses: courses,
+        created_at: userObj.createdAt
+    } as unknown as User;
+}
+
+export async function getUserByIdWithoutCourses(userId: number): Promise<User | null> {
+    const user = await db
+        .select()
+        .from(users)
+        .where(and(eq(users.id, userId)))
+        .execute();
+
+    if (user.length === 0) {
+        return null;
+    }
+
+    const userObj = user[0];
+    const profilePicture = await getProfilePictureByUserId(userObj.id);
+    
+    return {
+        id: userObj.id,
+        first_name: userObj.firstName,
+        last_name: userObj.lastName,
+        email: userObj.email,
+        profile_picture: profilePicture,
+        courses: [],
+        created_at: userObj.createdAt
+    } as unknown as User;
+}
+
 export async function getProfilePictureByUserId(userId: number): Promise<string | null> {
     const relation = await db
         .select()

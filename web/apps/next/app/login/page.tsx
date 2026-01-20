@@ -44,8 +44,6 @@ export function LoginPage() {
         }
     };
 
-    console.log('Session data:', session);
-
     return (
         <>
             <Head>

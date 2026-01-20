@@ -4,9 +4,9 @@ import { db } from "../../mysql";
 import { attachments } from "../../schema/attachments";
 import { postAttachments } from "@studify/database/schema/posts";
 import { Attachment } from "@studify/types";
-import { backgroundAttachments, courses } from "packages/database/schema/courses";
+import { backgroundAttachments, courses } from "@studify/database/schema/courses";
 
-export async function createAttachment(uploaderId: number, filePath: string): Promise<number> {
+export async function createAttachment(uploaderId: number, filePath: string): Promise<Attachment> {
     const result = await db
         .insert(attachments)
         .values({
@@ -15,7 +15,14 @@ export async function createAttachment(uploaderId: number, filePath: string): Pr
         })
         .execute();
 
-    return result[0].insertId;
+    const attachment = result[0];
+
+    return {
+        id: attachment.insertId,
+        uploaderId: uploaderId,
+        path: filePath,
+        uploadedAt: new Date(),
+    } as unknown as Attachment;
 }
 
 interface CreateRelationParams {
@@ -70,8 +77,12 @@ export async function getCourseBackgroundImage(courseId: number): Promise<Attach
         .select()
         .from(attachments)
         .innerJoin(
-            courses,
+            backgroundAttachments,
             eq(attachments.id, backgroundAttachments.attachmentId)
+        )
+        .innerJoin(
+            courses,
+            eq(backgroundAttachments.courseId, courses.id)
         )
         .where(eq(courses.id, courseId))
         .execute();
