@@ -96,21 +96,6 @@ export default function CourseCard({course}: {course: Course}) {
                         <span className="sr-only">Feladatok</span>
                     </Link>
                 </Button>
-                <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" size="sm" className="h-8 w-8 p-0 text-muted-foreground hover:text-foreground">
-                    <MoreVertical className="h-4 w-4" />
-                    <span className="sr-only">További lehetőségek</span>
-                    </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
-                    <DropdownMenuItem asChild>
-                    <Link href={`/courses/${course.id}`}>Kurzus megtekintése</Link>
-                    </DropdownMenuItem>
-                    <DropdownMenuSeparator />
-                    <DropdownMenuItem>Meghívó másolása</DropdownMenuItem>
-                </DropdownMenuContent>
-                </DropdownMenu>
             </div>
         </div>
     )

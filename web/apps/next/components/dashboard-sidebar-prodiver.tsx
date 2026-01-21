@@ -91,8 +91,6 @@ export function DashboardSidebar({ children }: { children: React.ReactNode }) {
             }
         });
 
-        console.log(session.user);
-
         setMonogram(monogramLetters.join(""));
         setProfilePictureUrl(session.user.profile_picture || "");
     }, [session]);
