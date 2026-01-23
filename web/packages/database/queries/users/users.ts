@@ -47,7 +47,7 @@ export async function updateProfilePicture(userId: number, profilePicturePath: s
             .execute();
     }
     
-    const attachmentId = await createAttachment(userId, profilePicturePath);
+    const attachmentId = (await createAttachment(userId, profilePicturePath)).id;
     const relation = await createRelation({foreignId: userId, attachmentId, table: profilePictureAttachments});
     
     return typeof relation === 'number';

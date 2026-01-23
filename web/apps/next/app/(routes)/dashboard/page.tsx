@@ -17,7 +17,7 @@ import { useEffect, useState } from "react";
 
 import CourseCard from "@/components/elements/course-card";
 
-import { createCourse, joinCourse } from "@/lib/dashboard/courseFuntions";
+import { createCourse, joinCourse } from "@/lib/dashboard/utils";
 import { useNotificationProvider } from "@/components/notification-provider";
 import { UploadDropzone } from "@/components/uploadthing/uploadthing";
 import { set } from "date-fns";

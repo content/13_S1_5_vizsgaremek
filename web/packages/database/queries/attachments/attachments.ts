@@ -40,15 +40,15 @@ export async function createRelation({ foreignId, attachmentId, table }: CreateR
         throw new Error('Foreign key column not found in the provided table.');
     }
 
-    const result = (await db
+    const result = await db
         .insert(table)
         .values({
             [foreignKeyColumn]: foreignId,
             attachmentId,
         })
-        .execute())[0];
+        .execute();
 
-    return result.insertId;
+    return result[0].insertId;
 }
 
 export async function getAttachmentsByPostId(postId: number): Promise<Attachment[]> {

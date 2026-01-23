@@ -77,13 +77,18 @@ export async function getCoursesByUserId(userId: number): Promise<Course[]> {
         })
         .from(courses)
         .innerJoin(coursesMembers, eq(courses.id, coursesMembers.courseId))
-        .where(eq(coursesMembers.userId, userId))
+        .where(and(eq(coursesMembers.userId, userId), eq(coursesMembers.isApproved, true)))
         .execute();
 
     return await Promise.all(coursez.map(async (course) => {
-        const members = await getCourseMembers(course.id);
+        let members = await getCourseMembers(course.id);
         const backgroundImage = await getCourseBackgroundImage(course.id);
         const posts = await getPostsByCourseId(course.id);
+
+        const isUserTeacher = members.find(member => member.user?.id === userId)?.isTeacher || false;
+        if(!isUserTeacher) {
+            members = members.filter(member => member.isApproved);
+        }
 
         return { 
             id: course.id,
@@ -113,6 +118,7 @@ export async function getCourseMembers(courseId: number): Promise<CourseMember[]
         return {
             user: userResult,
             isTeacher: member.isTeacher,
+            isApproved: member.isApproved,
         }
     })) as unknown as CourseMember[];
 }
@@ -121,7 +127,27 @@ export async function isUserCourseMember(courseId: number, userId: number): Prom
     const result = await db
         .select()
         .from(coursesMembers)
-        .where(and(eq(coursesMembers.courseId, courseId), eq(coursesMembers.userId, userId)))
+        .where(and(eq(coursesMembers.courseId, courseId), eq(coursesMembers.userId, userId), eq(coursesMembers.isApproved, true)))
+        .execute();
+
+    return result.length > 0;
+}
+
+export async function isUserTeacher(courseId: number, userId: number): Promise<boolean> {
+    const result = await db
+        .select()
+        .from(coursesMembers)
+        .where(and(eq(coursesMembers.courseId, courseId), eq(coursesMembers.userId, userId), eq(coursesMembers.isTeacher, true), eq(coursesMembers.isApproved, true)))
+        .execute();
+
+    return result.length > 0;
+}
+
+export async function isUserPendingMember(courseId: number, userId: number): Promise<boolean> {
+    const result = await db
+        .select()
+        .from(coursesMembers)
+        .where(and(eq(coursesMembers.courseId, courseId), eq(coursesMembers.userId, userId), eq(coursesMembers.isApproved, false)))
         .execute();
 
     return result.length > 0;
@@ -183,7 +209,8 @@ export async function createCourse(creatorId: number, name: string, backgroundIm
         .values({
             courseId: courseId,
             userId: creatorId,
-            isTeacher: true
+            isTeacher: true,
+            isApproved: true
         })
         .execute();
 
@@ -204,7 +231,7 @@ export async function createCourse(creatorId: number, name: string, backgroundIm
     } as unknown as Course;
 }
 
-export async function joinCourse(userId: number, invitationCode: string): Promise<Course | null> {
+export async function joinCourse(userId: number, invitationCode: string): Promise<Course | JSON | null> {
     const courses_result = await db
         .select()
         .from(courses)
@@ -226,9 +253,31 @@ export async function joinCourse(userId: number, invitationCode: string): Promis
         .insert(coursesMembers)
         .values({
             courseId: course.id,
-            userId: userId
+            userId: userId,
+            isApproved: false
         })
         .execute();
 
-    return getCourseById(course.id);
+    return { message: "Join request sent."  } as unknown as JSON;
+}
+
+export async function approveUser(courseId: number, userId: number): Promise<boolean> {
+    const result = await db
+        .update(coursesMembers)
+        .set({
+            isApproved: true
+        })
+        .where(and(eq(coursesMembers.courseId, courseId), eq(coursesMembers.userId, userId)))
+        .execute();
+
+    return result.affectedRows > 0;
+}
+
+export async function declineUser(courseId: number, userId: number): Promise<boolean> {
+    const result = await db
+        .delete(coursesMembers)
+        .where(and(eq(coursesMembers.courseId, courseId), eq(coursesMembers.userId, userId)))
+        .execute();
+
+    return result.affectedRows > 0;
 }

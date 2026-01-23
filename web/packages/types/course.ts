@@ -5,6 +5,7 @@ import { User } from './user';
 export interface CourseMember {
     user: User; 
     isTeacher: boolean;
+    isApproved: boolean;
 }
 
 export interface Course {
