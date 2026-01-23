@@ -5,7 +5,7 @@ import { users } from './users';
 import { attachments } from './attachments';
 
 export const submissions = mysqlTable("submissions", {
-    id: int("id").autoincrement().primaryKey(),
+    id: int("id").autoincrement().primaryKey().$type<number>().$type<number>(),
     postId: int("post_id").notNull().references(() => posts.id),
     userId: int("user_id").notNull().references(() => users.id),
     statusId: int("status_id").notNull().references(() => submissionStatuses.id),
@@ -15,14 +15,14 @@ export const submissions = mysqlTable("submissions", {
 });
 
 export const submissionHistories = mysqlTable("submission_histories", {
-    id: int("id").autoincrement().primaryKey(),
+    id: int("id").autoincrement().primaryKey().$type<number>().$type<number>(),
     submissionId: int("submission_id").notNull().references(() => submissions.id),
     versionNumber: int("version_number").notNull(),
     createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
 export const submissionStatuses = mysqlTable("submission_statuses", {
-    id: int("id").autoincrement().primaryKey(),
+    id: int("id").autoincrement().primaryKey().$type<number>().$type<number>(),
     name: varchar("name", { length: 100 }).notNull(),
 });
 

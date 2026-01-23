@@ -2,7 +2,7 @@ import { and, eq } from 'drizzle-orm';
 
 import { db } from '../../mysql';
 import { Post } from '@studify/types';
-import { comments, posts } from '../../schema/posts';
+import { comments, posts, postTypes } from '../../schema/posts';
 import { getAttachmentsByPostId } from '../attachments/attachments';
 
 export async function getPostsByCourseId(courseId: number): Promise<Post[]> {
@@ -58,4 +58,13 @@ export async function getPostById(postId: number): Promise<Post | null> {
         description: post.description,
         createdAt: post.createdAt,
     } as unknown as Post;
+}
+
+export async function getPostTypes(): Promise<string[]> {
+    const postTypez = await db
+        .select()
+        .from(postTypes)
+        .execute();
+
+    return postTypez.map((type) => type.name.toUpperCase());
 }

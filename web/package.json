@@ -10,7 +10,8 @@
     "migrations:generate": "bun run --filter @studify/database drizzle-kit generate",
     "migrations:push": "bun run --filter @studify/database drizzle-kit push",
     "migrations:drop": "bun run --filter @studify/database drizzle-kit drop",
-    "migrations:migrate": "bun run --filter @studify/database drizzle-kit migrate"
+    "migrations:migrate": "bun run --filter @studify/database drizzle-kit migrate",
+    "migrations:seed": "bun ./packages/database/seed.ts"
   },
   "devDependencies": {
     "@types/node": "^22.13.9",

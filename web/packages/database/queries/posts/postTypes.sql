@@ -1,0 +1,5 @@
+INSERT INTO post_types (name) VALUES
+("ANNOUNCEMENT"),
+("ASSIGNMENT"),
+("QUESTION"),
+("RESOURCE");

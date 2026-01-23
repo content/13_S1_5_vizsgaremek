@@ -5,7 +5,7 @@ import { attachments } from "./attachments";
 import { users } from "./users";
 
 export const posts = mysqlTable('posts', {
-    id: int('id').autoincrement().primaryKey(),
+    id: int('id').autoincrement().primaryKey().$type<number>(),
     courseId: int('course_id').notNull().references(() => courses.id),
     name: varchar('name', { length: 255 }).notNull(),
     description: varchar('description', { length: 1024 }),
@@ -16,7 +16,7 @@ export const posts = mysqlTable('posts', {
 });
 
 export const comments = mysqlTable('comments', {
-    id: int('id').autoincrement().primaryKey(),
+    id: int('id').autoincrement().primaryKey().$type<number>(),
     postId: int('post_id').notNull().references(() => posts.id),
     senderId: int('sender_id').notNull().references(() => users.id),
     content: varchar('content', { length: 2048 }).notNull(),
@@ -24,7 +24,7 @@ export const comments = mysqlTable('comments', {
 });
 
 export const postMessages = mysqlTable('post_messages', {
-    id: int('id').autoincrement().primaryKey(),
+    id: int('id').autoincrement().primaryKey().$type<number>(),
     postId: int('post_id').notNull().references(() => posts.id),
     senderId: int('sender_id').notNull().references(() => users.id),
     recipientId: int('recipient_id').notNull().references(() => users.id),
@@ -34,7 +34,7 @@ export const postMessages = mysqlTable('post_messages', {
 });
 
 export const postTypes = mysqlTable('post_types', {
-    id: int('id').autoincrement().primaryKey(),
+    id: int('id').autoincrement().primaryKey().$type<number>(),
     name: varchar('name', { length: 100 }).notNull().unique(),
 });
 

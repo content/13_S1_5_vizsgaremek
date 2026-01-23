@@ -5,6 +5,9 @@ export default defineConfig({
     dialect: "mysql",
     schema: "./schema",
     out: "./migrations",
+    introspect: {
+        casing: 'preserve',
+    },
     dbCredentials: {
         url: connectionString || ""
     }
