@@ -13,30 +13,9 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { MoreVertical, ClipboardList, FolderOpen, Users } from "lucide-react"
-
-function generateColorFromInvitationCode(code: string): { bg: string; text: string } {
-    const colors = [
-        { bg: 'bg-gradient-to-br from-blue-500 via-indigo-500 to-purple-500', text: 'text-white' },
-        { bg: 'bg-gradient-to-br from-green-500 via-emerald-500 to-teal-500', text: 'text-white' },
-        { bg: 'bg-gradient-to-br from-red-500 via-pink-500 to-rose-500', text: 'text-white' },
-        { bg: 'bg-gradient-to-br from-yellow-400 via-orange-400 to-red-400', text: 'text-black' },
-        { bg: 'bg-gradient-to-br from-cyan-400 via-sky-500 to-blue-500', text: 'text-white' },
-        { bg: 'bg-gradient-to-br from-purple-400 via-fuchsia-500 to-pink-500', text: 'text-white' },
-    ]
-
-    let hash = 0
-
-    for (let i = 0; i < code.length; i++) {
-        hash = code.charCodeAt(i) + ((hash << 5) - hash);
-    }
-
-    const index = Math.abs(hash) % colors.length;
-    return colors[index];
-}
+import { generateColorFromInvitationCode } from "@/lib/dashboard/utils";
 
 export default function CourseCard({course}: {course: Course}) {
-    console.log(course)
-
     const colors = generateColorFromInvitationCode(course.invitationCode);
     
     const teachers = course.members.filter((member: any) => member.isTeacher);
@@ -47,12 +26,9 @@ export default function CourseCard({course}: {course: Course}) {
             <div className="relative h-28 p-4">
                 <div className="absolute top-0 bottom-0 left-0 right-0 z-1">
                     {course.backgroundImage ? (
-                        <>
-                            {/* <div className="w-full h-full bg-black opacity-15 z-50"/> */}
-                            <Image src={course.backgroundImage.path} alt={`${course.name} background`} fill className="object-cover z-1" />
-                        </>
+                        <Image src={course.backgroundImage.path} alt={`${course.name} background`} fill className="object-cover z-1" />
                     ) : (
-                        <div className={`absolute inset-0 ${colors.bg} z-1`}></div>
+                        <div className={`${colors.bg} absolute inset-0 z-1`}></div>
                     )}
                 </div>
                 <div className="absolute z-1 flex justify-between items-start h-full">

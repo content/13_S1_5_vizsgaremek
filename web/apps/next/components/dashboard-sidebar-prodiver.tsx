@@ -11,7 +11,7 @@ import Link from "next/link"
 import React, { useEffect } from "react"
 import { Label } from "./ui/label";
 import { Input } from "./ui/input";
-import { createCourse, joinCourse } from "@/lib/dashboard/courseFuntions";
+import { createCourse, joinCourse } from "@/lib/dashboard/utils";
 import { useNotificationProvider } from "./notification-provider";
 import { UploadDropzone } from "./uploadthing/uploadthing";
 
@@ -90,8 +90,6 @@ export function DashboardSidebar({ children }: { children: React.ReactNode }) {
                 monogramLetters.push(n[0].toUpperCase());
             }
         });
-
-        console.log(session.user);
 
         setMonogram(monogramLetters.join(""));
         setProfilePictureUrl(session.user.profile_picture || "");

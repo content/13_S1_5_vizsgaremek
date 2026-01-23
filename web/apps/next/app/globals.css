@@ -67,4 +67,9 @@
   input[type="number"]::-webkit-outer-spin-button {
     @apply appearance-none;
   }
+
+  .dropdown-content-width-full {
+    width: var(--radix-dropdown-menu-trigger-width);
+    max-height: var(--radix-dropdown-menu-content-available-height);
+  }
 }
