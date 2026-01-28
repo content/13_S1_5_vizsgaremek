@@ -66,7 +66,7 @@ export const NotificationProvider = ({ children }: { children: ReactNode }) => {
     return (
         <NotificationProviderCtx.Provider value={{ notify }}>
             {children}
-            <div className="notification-wrapper absolute top-0 right-0 left-0 h-max flex justify-center items-center flex-col space-y-2 pointer-events-none pt-3">
+            <div className="notification-wrapper absolute top-0 right-0 left-0 h-max flex justify-center items-center flex-col space-y-2 pointer-events-none pt-3 z-50">
                 <AnimatePresence mode="popLayout">
                     {notifications.map((n, index) => (
                         <motion.div
