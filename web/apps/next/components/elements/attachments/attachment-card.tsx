@@ -7,18 +7,25 @@ import { useState } from "react";
 
 type AttachmentCardProps = {
     attachment: Attachment;
+    size?: 'small' | 'medium' | 'large';
 }
 
-export default function AttachmentCard({ attachment }: AttachmentCardProps) {
+export default function AttachmentCard({ attachment, size = 'medium' }: AttachmentCardProps) {
     const [isOpen, setIsOpen] = useState(false);
     const extension = attachment.fileName.split('.').pop()?.toLowerCase();
+
+    const sizeMappings = {
+        small: 'h-32 w-24',
+        medium: 'h-40 w-32',
+        large: 'h-52 w-40',
+    }
 
     const isImage = extension === 'png' || extension === 'jpg' || extension === 'jpeg' || extension === 'gif' || extension === 'bmp' || extension === 'svg';
 
     return (
         <AttachmentPreviewDialog attachment={attachment} isOpen={isOpen} onClose={() => setIsOpen(false)}>
             <Card className="overflow-hidden" onClick={() => setIsOpen(true)}>
-                <CardContent className="relative p-0 h-52 w-40 overflow-hidden cursor-pointer group">
+                <CardContent className={`relative p-0 ${sizeMappings[size]} overflow-hidden cursor-pointer group`}>
                     <div className="flex items-center justify-center h-[70%] w-full relative">
                         <div className="flex justify-center items-center w-full h-full bg-primary/10 p-7">
                             {isImage && (
