@@ -3,7 +3,7 @@ import { db } from "../../mysql";
 import { Attachment, Course, CourseMember } from "@studify/types";
 import { backgroundAttachments, courses, coursesMembers } from '../../schema/courses';
 import { getCourseBackgroundImage } from '../attachments/attachments';
-import { getPostsByCourseId } from '../posts/posts';
+import { getPostsByCourseId, getPostsByCourseIdandUserId } from '../posts/posts';
 import { MySqlRawQueryResult } from 'drizzle-orm/mysql2';
 import { getUserById, getUserByIdWithoutCourses } from '../users/users';
 
@@ -83,7 +83,7 @@ export async function getCoursesByUserId(userId: number): Promise<Course[]> {
     return await Promise.all(coursez.map(async (course) => {
         let members = await getCourseMembers(course.id);
         const backgroundImage = await getCourseBackgroundImage(course.id);
-        const posts = await getPostsByCourseId(course.id);
+        const posts = await getPostsByCourseIdandUserId(course.id, userId);
 
         const isUserTeacher = members.find(member => member.user?.id === userId)?.isTeacher || false;
         if(!isUserTeacher) {
@@ -107,6 +107,7 @@ export async function getCourseMembers(courseId: number): Promise<CourseMember[]
         .select({
             userId: coursesMembers.userId,
             isTeacher: coursesMembers.isTeacher,
+            isApproved: coursesMembers.isApproved,
         })
         .from(coursesMembers)
         .where(eq(coursesMembers.courseId, courseId))

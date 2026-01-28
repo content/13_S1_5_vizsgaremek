@@ -7,7 +7,7 @@ import { createAttachment, createRelation } from "../attachments/attachments";
 import { getCoursesByUserId } from "../courses/courses";
 import { attachments } from '../../schema/attachments';
 
-export async function createUser(email: string, password: string, firstName: string, lastName: string, profilePicturePath: string | null): Promise<User | null> {
+export async function createUser(email: string, password: string, firstName: string, lastName: string, profilePicture: {path: string | null, name: string | null}): Promise<User | null> {
     const hashedPassword = await bcrypt.hash(password, 10);
 
     const results = await db
@@ -26,14 +26,14 @@ export async function createUser(email: string, password: string, firstName: str
         return null;
     }
 
-    if(profilePicturePath) {
-        await updateProfilePicture(userId, profilePicturePath);
+    if(profilePicture.path && profilePicture.name) {
+        await updateProfilePicture(userId, profilePicture.path, profilePicture.name);
     }
     
     return await getUser(email);
 }
 
-export async function updateProfilePicture(userId: number, profilePicturePath: string): Promise<boolean> {
+export async function updateProfilePicture(userId: number, profilePicturePath: string, profilePictureName: string): Promise<boolean> {
     const currentRelation = (await db
         .select()
         .from(profilePictureAttachments)
@@ -47,7 +47,7 @@ export async function updateProfilePicture(userId: number, profilePicturePath: s
             .execute();
     }
     
-    const attachmentId = (await createAttachment(userId, profilePicturePath)).id;
+    const attachmentId = (await createAttachment(userId, profilePicturePath, profilePictureName)).id;
     const relation = await createRelation({foreignId: userId, attachmentId, table: profilePictureAttachments});
     
     return typeof relation === 'number';

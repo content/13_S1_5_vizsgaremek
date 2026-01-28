@@ -5,13 +5,15 @@ import { attachments } from "../../schema/attachments";
 import { postAttachments } from "@studify/database/schema/posts";
 import { Attachment } from "@studify/types";
 import { backgroundAttachments, courses } from "@studify/database/schema/courses";
+import { submissionHistoryAttachments } from "@studify/database/schema/submissions";
 
-export async function createAttachment(uploaderId: number, filePath: string): Promise<Attachment> {
+export async function createAttachment(uploaderId: number, filePath: string, fileName: string): Promise<Attachment> {
     const result = await db
         .insert(attachments)
         .values({
             uploaderId,
             path: filePath,
+            fileName,
         })
         .execute();
 
@@ -20,6 +22,7 @@ export async function createAttachment(uploaderId: number, filePath: string): Pr
     return {
         id: attachment.insertId,
         uploaderId: uploaderId,
+        fileName: fileName,
         path: filePath,
         uploadedAt: new Date(),
     } as unknown as Attachment;
@@ -29,6 +32,26 @@ interface CreateRelationParams {
     foreignId: number;
     attachmentId: number;
     table: MySqlTableWithColumns<any>;
+}
+
+export async function getAttachmentById(attachmentId: number): Promise<Attachment | null> {
+    const result = await db
+        .select()
+        .from(attachments)
+        .where(eq(attachments.id, attachmentId))
+        .execute();
+
+    if (result.length === 0) {
+        return null;
+    }
+
+    const attachment = result[0];
+
+    return {
+        id: attachment.id,
+        uploaderId: attachment.uploaderId,
+        fileName: attachment.fileName,
+    } as Attachment;
 }
 
 export async function createRelation({ foreignId, attachmentId, table }: CreateRelationParams): Promise<number> {
@@ -65,6 +88,7 @@ export async function getAttachmentsByPostId(postId: number): Promise<Attachment
     const mappedResults = results.map((result) => ({
         id: result.attachments.id,
         uploaderId: result.attachments.uploaderId,
+        fileName: result.attachments.fileName,
         path: result.attachments.path,
         uploadedAt: result.attachments.uploadedAt,
     })) as Attachment[];
@@ -96,7 +120,29 @@ export async function getCourseBackgroundImage(courseId: number): Promise<Attach
     return {
         id: attachment.id,
         uploaderId: attachment.uploaderId,
+        fileName: attachment.fileName,
         path: attachment.path,
         uploadedAt: attachment.uploadedAt,
     } as Attachment;
+}
+
+export async function getAttachmentsBySubmissionHistoryId(historyId: number): Promise<Attachment[]> {
+    const results = await db
+        .select()
+        .from(attachments)
+        .innerJoin(
+            submissionHistoryAttachments,
+            eq(attachments.id, submissionHistoryAttachments.attachmentId)
+        )
+        .where(eq(submissionHistoryAttachments.historyId, historyId))
+        .execute();
+
+    const mappedResults = results.map((result) => ({
+        id: result.attachments.id,
+        uploaderId: result.attachments.uploaderId,
+        path: result.attachments.path,
+        fileName: result.attachments.fileName,
+    }) as Attachment);
+
+    return mappedResults;
 }
