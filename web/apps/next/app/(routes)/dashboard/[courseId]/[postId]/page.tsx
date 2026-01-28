@@ -11,7 +11,7 @@ import { Dialog, DialogContent, DialogFooter, DialogTitle, DialogTrigger } from 
 import { Skeleton } from "@/components/ui/skeleton";
 import { UploadDropzone } from "@/components/uploadthing/uploadthing";
 import { generateColorFromInvitationCode } from "@/lib/dashboard/utils";
-import { Course, Post, Submission } from "@studify/types";
+import { Course, Post, Submission, CourseMember } from "@studify/types";
 import { set } from "date-fns";
 import { Home } from "lucide-react";
 import { useSession } from "next-auth/react";
@@ -28,6 +28,7 @@ export default function PostPage({ params }: { params: Promise<{ courseId: strin
     const { data: session, status } = useSession();
 
     const [course, setCourse] = React.useState<Course | null>(null);
+    const [isUserTeacher, setIsUserTeacher] = React.useState<boolean>(false);
     const [post, setPost] = React.useState<Post | null>(null);
     const [postType, setPostType] = React.useState<string | null>(null);
 
@@ -97,13 +98,9 @@ export default function PostPage({ params }: { params: Promise<{ courseId: strin
             notify("A megadott melléklet nem található a leadott munkádban!", { type: "error" });
             return;
         }
-        
-        console.log(submission.attachments);
 
         const newAttachments = submission.attachments.filter((att: any) => att.fileName !== name || att.path !== url);
         
-        console.log(newAttachments);
-
         const response = await fetch(`/api/submissions/edit`, {
             method: "POST",
             headers: {
@@ -143,22 +140,24 @@ export default function PostPage({ params }: { params: Promise<{ courseId: strin
             return;
         }
 
-        const tmpCourse = session.user.courses.find(c => c.id === +courseId);
+        const tmpCourse = session.user.courses.find((c: Course) => c.id === +courseId);
         if (!tmpCourse) {
             notify("Nincs hozzáférésed ehhez a kurzushoz.", { type: "error" });
             router.push("/dashboard");
             return;
         }
 
-        const tmpPost = tmpCourse.posts.find(p => p.id === +postId);
+        const tmpPost = tmpCourse.posts.find((p: Post) => p.id === +postId);
         if (!tmpPost) {
             notify("A bejegyzés nem található.", { type: "error" });
             router.push(`/dashboard/${courseId}`);
             return;
         }
 
-        const teachers = tmpCourse.members.filter(cu => cu.isTeacher);
+        const teachers = tmpCourse.members.filter((cu: CourseMember) => cu.isTeacher);
 
+
+        setIsUserTeacher(teachers.some((t: CourseMember) => t.user.id === session.user?.id));
         setCourse(tmpCourse);
         setPost(tmpPost);
         setPostType(tmpPost.postType.name);
@@ -169,7 +168,6 @@ export default function PostPage({ params }: { params: Promise<{ courseId: strin
 
     useEffect(() => {
         if(!submission) return;
-
 
         submission.attachments = submission.attachments.map((attachment: any) => {
             console.log(attachment);
@@ -232,95 +230,115 @@ export default function PostPage({ params }: { params: Promise<{ courseId: strin
                     <div className="flex flex-col gap-3">
                         <Card className="p-2">
                             <div className="p-4 flex flex-col gap-2 justify-end">
-                                <h3 className="flex justify-end font-semibold mb-2">Feladat beadása</h3>
-                                {!submission && (
-                                    <p className="text-sm text-center text-muted-foreground mb-2">Még nem adtál le munkát erre a feladatra.</p>
-                                )}
-                                {submission && (
-                                    <div className="flex flex-col gap-2">
-                                        {submission.attachments.map((attachment: any, index: number) => (
-                                            <SubmissionAttachmentCard 
-                                                key={`SUBMISSION_ATTACHMENT_${index}`}
-                                                name={attachment.fileName}
-                                                url={attachment.path}
-                                                onRemove={(name: string, url: string) => handleSubmissionAttachmentRemove(name, url)}
-                                            />
-                                        ))}
+                                {isUserTeacher &&(
+                                    <div>
+                                        <h3 className="flex justify-center font-semibold mb-2">Feladatok kezelése</h3>
+                                        <p className="text-sm text-center text-muted-foreground mb-5">Tekintsd meg és értékeld a beadott feladatokat!</p>
+                                        <div className="flex flex-col gap-2">
+                                            <Link href={`/dashboard/${courseId}/${postId}/submissions`} className="w-full">
+                                                <Button
+                                                    variant={"outline"}
+                                                    className="w-full"
+                                                >
+                                                    Megtekintés és értékelés
+                                                </Button>
+                                            </Link>
+                                        </div>
                                     </div>
                                 )}
-                                <Dialog>
-                                    <DialogTrigger asChild>
-                                        <Button
-                                            variant={"outline"}
-                                            className="w-full mb-2"
-                                        >
-                                            Munka hozzáadása
-                                        </Button>
-                                    </DialogTrigger>
-                                    <DialogContent className="max-w-2xl w-full">
-                                        <DialogTitle>
-                                            Munka hozzáadása
-                                        </DialogTitle>
-                                        <div className="">
-                                            <UploadDropzone
-                                                className="border-border bg-background hover:bg-accent/50 transition-colors"
-                                                endpoint="fileUploader"
-                                                onClientUploadComplete={(res) => {
-                                                    for (const file of res) {
-                                                        const name = file?.name;
-                                                        const url = file?.ufsUrl;
-                                                        const type = file?.type;
-                                                        
-                                                        if(url && name) {
-                                                            notify("Sikeres feltöltés!", { type: "success", description: "A profilképed sikeresen feltöltve." });
-                                                        
-                                                            setSubmissionAttachmentAdditions(prev => new Map(prev).set(name, [url, type]));
-                                                        }
-                                                    }
-                                                    setIsSubmittingBtnDisabled(false);
-                                                }}
-                        
-                                                onUploadProgress={(progress) => {
-                                                    setIsSubmittingBtnDisabled(progress < 100);
-                                                }}
-                        
-                                                onUploadError={(error: Error) => {
-                                                    notify("Hiba a kép feltöltése során!", { type: "error", description: "Próbáld újra később!" });
-                                                    console.error(error);
-                                                    setIsSubmittingBtnDisabled(false);
-                                                }}
-                                            />
-                                            <div className="mt-4">
-                                                {Array.from(submissionAttachmentAdditions.entries()).map(([name, [url, type]]) => (
-                                                    <AttachmentUploadCard key={`ATTACHMENT_UPLOADED_${name}`} name={name} url={url} type={type} onRemove={(name) => {
-                                                        setSubmissionAttachmentAdditions(prev => {
-                                                            const newAttachments = new Map(prev);
-                                                            newAttachments.delete(name);
-                                                            return newAttachments;
-                                                        });
-                                                    }} />
+                                {!isUserTeacher && (
+                                    <div>
+                                        <h3 className="flex justify-center font-semibold mb-2">Feladat beadása</h3>
+                                        {!submission || submission.attachments.length === 0 && (
+                                            <p className="text-sm text-center text-muted-foreground mb-5">Még nem adtál le munkát erre a feladatra.</p>
+                                        )}
+                                        {submission && submission.attachments.length !== 0 && (
+                                            <div className="flex flex-col gap-2">
+                                                {submission.attachments.map((attachment: any, index: number) => (
+                                                    <SubmissionAttachmentCard 
+                                                        key={`SUBMISSION_ATTACHMENT_${index}`}
+                                                        name={attachment.fileName}
+                                                        url={attachment.path}
+                                                        onRemove={(name: string, url: string) => handleSubmissionAttachmentRemove(name, url)}
+                                                    />
                                                 ))}
                                             </div>
-                                            
-                                        </div>
-                                        <DialogFooter>
-                                            <Button
-                                                variant="outline"
-                                                className="w-full"
-                                                onClick={() => handleSubmissionAttachmentAdd()}
-                                                disabled={isSubmittingBtnDisabled}
-                                            >
-                                                Hozzáadás
-                                            </Button>
-                                        </DialogFooter>
-                                    </DialogContent>
-                                </Dialog>
+                                        )}
+                                        <Dialog>
+                                            <DialogTrigger asChild>
+                                                <Button
+                                                    variant={"outline"}
+                                                    className="w-full mb-2"
+                                                >
+                                                    Munka hozzáadása
+                                                </Button>
+                                            </DialogTrigger>
+                                            <DialogContent className="max-w-2xl w-full">
+                                                <DialogTitle>
+                                                    Munka hozzáadása
+                                                </DialogTitle>
+                                                <div className="">
+                                                    <UploadDropzone
+                                                        className="border-border bg-background hover:bg-accent/50 transition-colors"
+                                                        endpoint="fileUploader"
+                                                        onClientUploadComplete={(res) => {
+                                                            for (const file of res) {
+                                                                const name = file?.name;
+                                                                const url = file?.ufsUrl;
+                                                                const type = file?.type;
+                                                                
+                                                                if(url && name) {
+                                                                    notify("Sikeres feltöltés!", { type: "success", description: "A profilképed sikeresen feltöltve." });
+                                                                
+                                                                    setSubmissionAttachmentAdditions(prev => new Map(prev).set(name, [url, type]));
+                                                                }
+                                                            }
+                                                            setIsSubmittingBtnDisabled(false);
+                                                        }}
                                 
-                                <Button
-                                    className="w-full "
-                                >
-                                    Beadás
-                                </Button>
+                                                        onUploadProgress={(progress) => {
+                                                            setIsSubmittingBtnDisabled(progress < 100);
+                                                        }}
+                                
+                                                        onUploadError={(error: Error) => {
+                                                            notify("Hiba a kép feltöltése során!", { type: "error", description: "Próbáld újra később!" });
+                                                            console.error(error);
+                                                            setIsSubmittingBtnDisabled(false);
+                                                        }}
+                                                    />
+                                                    <div className="mt-4">
+                                                        {Array.from(submissionAttachmentAdditions.entries()).map(([name, [url, type]]) => (
+                                                            <AttachmentUploadCard key={`ATTACHMENT_UPLOADED_${name}`} name={name} url={url} type={type} onRemove={(name) => {
+                                                                setSubmissionAttachmentAdditions(prev => {
+                                                                    const newAttachments = new Map(prev);
+                                                                    newAttachments.delete(name);
+                                                                    return newAttachments;
+                                                                });
+                                                            }} />
+                                                        ))}
+                                                    </div>
+                                                    
+                                                </div>
+                                                <DialogFooter>
+                                                    <Button
+                                                        variant="outline"
+                                                        className="w-full"
+                                                        onClick={() => handleSubmissionAttachmentAdd()}
+                                                        disabled={isSubmittingBtnDisabled}
+                                                    >
+                                                        Hozzáadás
+                                                    </Button>
+                                                </DialogFooter>
+                                            </DialogContent>
+                                        </Dialog>
+                                        
+                                        <Button
+                                            className="w-full "
+                                        >
+                                            Beadás
+                                        </Button>
+                                    </div>
+                                )}
                             </div>
                         </Card>
                     </div>
