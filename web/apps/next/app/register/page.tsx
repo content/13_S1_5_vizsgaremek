@@ -24,7 +24,7 @@ export default function RegisterPage() {
     const [email, setEmail] = React.useState("")
     const [password, setPassword] = React.useState("")
     const [confirmationPassword, setConfirmationPassword] = React.useState("")
-    const [profilePicture, setProfilePicture] = React.useState<string | null>(null)
+    const [profilePicture, setProfilePicture] = React.useState<{path: string | null, name: string | null}>({path: null, name: null})
 
 
     const registerUser = async (event: React.FormEvent<HTMLFormElement>) => {
@@ -36,8 +36,9 @@ export default function RegisterPage() {
         formData.append("email", email);
         formData.append("password", password);
         
-        if (profilePicture) {
-            formData.append("profile_picture", profilePicture);
+        if (profilePicture.path && profilePicture.name) {
+            formData.append("profile_picture", profilePicture.path);
+            formData.append("profile_picture_file_name", profilePicture.name);
         }
 
         try {
@@ -116,9 +117,10 @@ export default function RegisterPage() {
                         endpoint="imageUploader"
                         onClientUploadComplete={(res) => {
                             const url = res[0]?.ufsUrl;
+                            const name = res[0]?.name;
                             if(url) {
                                 notify("Sikeres feltöltés!", { type: "success", description: "A profilképed sikeresen feltöltve." });
-                                setProfilePicture(res[0]?.ufsUrl || null);
+                                setProfilePicture({path: res[0]?.ufsUrl || null, name: res[0]?.name || null});
                             }
 
                             setIsRegisterBtnDisabled(false);
