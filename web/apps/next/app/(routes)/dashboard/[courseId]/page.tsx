@@ -5,27 +5,29 @@ import { useSession } from "next-auth/react";
 import React, { useEffect, useState } from "react";
 
 import { useRouter } from "next/navigation";
-import { format } from "date-fns"
 
 import { Button } from "@/components/ui/button";
-import { ChevronDownIcon, ClipboardList, Home, Info, Pencil, Users } from "lucide-react";
+import { ClipboardList, Home, Info, Users } from "lucide-react";
 
 import { UserAvatar } from "@/components/elements/avatar";
 import NoPostsCard from "@/components/elements/posts/no-posts-card";
+import NewPostDialog from "@/components/elements/posts/post-dialog";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Skeleton } from "@/components/ui/skeleton";
 import { generateColorFromInvitationCode } from "@/lib/dashboard/utils";
-import Image from "next/image";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Calendar } from "@/components/ui/calendar";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+
+import CourseBanner from "@/components/elements/course-banner";
+import PostCard from "@/components/elements/posts/post-card";
+
+import { Post } from "@studify/database";
+import { useNotificationProvider } from "@/components/notification-provider";
 
 export default function CoursePage({ params }: { params: Promise<{ courseId: string }> }) {
     const { courseId } = React.use(params);
 
     const router = useRouter()
 
+    const { notify } = useNotificationProvider();
     const { data: session, status } = useSession();
 
     const [activeTab, setActiveTab] = useState<string>("stream");
@@ -39,33 +41,54 @@ export default function CoursePage({ params }: { params: Promise<{ courseId: str
     const [teacherNames, setTeacherNames] = useState<string[]>([]);
     const [colors, setColors] = useState<{ bg: string; text: string, neutralBgText: string }>({ bg: '', text: '', neutralBgText: '' });
 
-    const [newPostModalOpen, setNewPostModalOpen] = useState<boolean>(false);
-    const [postTypes, setPostTypes] = useState<string[]>([]);
-    const [selectedPostType, setSelectedPostType] = useState<string>("ANNOUNCEMENT");
-    
-    const [isDeadlineEnabled, setIsDeadlineEnabled] = useState<boolean>(false);
-    const [date, setDate] = React.useState<Date>()
+    const handleApproveStudent = async (studentId: number) => {
+        const response = await fetch(`/api/courses/${courseId}/members/approve`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                initiatorId: session?.user?.id,
+                targetId: studentId,
+            }),
+        });
 
-    const postTypeMappings: { [key: string]: string } = {
-        "ANNOUNCEMENT": "Közlemény",
-        "ASSIGNMENT": "Feladat",
-        "QUESTION": "Kérdés",
-        "RESOURCE": "Tananyag"
-    };
+        switch (response.status) {
+            case 200:
+                notify("Sikeres jóváhagyás", { type: "success", description: "A tanuló sikeresen jóváhagyva." });
 
-    useEffect(() => {
-        const fetchPostTypes = async () => {
-            try {
-                const response = await fetch('/api/posts');
-                const data = await response.json();
-                setPostTypes(data.postTypes);
-            } catch (error) {
-                console.error('Error fetching post types:', error);
-            }
-        };
+                setCourse((prevCourse: Course) => {
+                    if (!prevCourse) return prevCourse;
+                    const updatedMembers = prevCourse.members.map((member: CourseMember) => {
+                        if (member.id === studentId) {
+                            return { ...member, isApproved: true };
+                        }
+                        return member;
+                    });
+                    return { ...prevCourse, members: updatedMembers };
+                });
 
-        fetchPostTypes();
-    }, [])
+                setStudents((prev) => {
+                    const approvedStudent = unverfiedStudents.find((member) => member.id === studentId);
+                    if (approvedStudent) {
+                        return [...prev, { ...approvedStudent, isApproved: true }];
+                    }
+                    return prev;
+                });
+                
+                setUnverifiedStudents((prev) => prev.filter((member) => member.id !== studentId));
+                break;
+            case 401:
+                notify("Sikertelen jóváhagyás", { type: "error", description: "Nincs jogosultságod a művelet végrehajtásához." });
+                break;
+            case 500:
+                notify("Sikertelen jóváhagyás", { type: "error", description: "Hiba történt a tanuló jóváhagyása során." });
+                break;
+            default:
+                notify("Sikertelen jóváhagyás", { type: "error", description: "Ismeretlen hiba történt." });
+        }
+                
+    }
 
     useEffect(() => {
         if(status === "loading") return;
@@ -120,17 +143,7 @@ export default function CoursePage({ params }: { params: Promise<{ courseId: str
         </div>
     ) : (
         <div>
-            <div className="relative h-48 md:h-64 lg:h-64 2xl:h-64 mb-6 shadow-md rounded-lg overflow-hidden">
-                {course.backgroundImage ? (
-                    <Image src={course.backgroundImage.path} alt={`${course.name} background`} fill className="absolute object-cover z-1" />
-                ) : (
-                    <div className={`${colors.bg} absolute overflow-hidden rounded-lg w-full h-full z-1`} />
-                )}
-                <div className="relative max-w-6xl mx-auto z-10 p-6 md:py-8 ">
-                    <h1 className="text-2xl md:text-3xl font-bold text-white mb-2 max-w-2xl">{course?.name}</h1>
-                    <p className="text-white/90 text-sm md:text-base">{teacherNames.join(", ")}</p>
-                </div>
-            </div>
+            <CourseBanner course={course} />
 
             <div className="mt-6 mx-auto w-full max-w-6xl space-y-6">
                 <Card className="p-4 rounded-lg">
@@ -160,116 +173,25 @@ export default function CoursePage({ params }: { params: Promise<{ courseId: str
                                     <h2 className="font-mono font-bold text-lg select-all">{course.invitationCode}</h2>
                                 </div>
                             </Card>
-                            <Dialog>
-                                <DialogTrigger asChild>
-                                    <Button variant="outline" className="gap-2 bg-transparent">
-                                        <Pencil className="h-4 w-4" />
-                                        Új poszt
-                                    </Button>
-                                </DialogTrigger>
-                                <DialogContent>
-                                    <DialogHeader>
-                                        <DialogTitle>
-                                            Új poszt létrehozása
-                                        </DialogTitle>
-                                        <DialogDescription>
-                                            Hozz létre egy új posztot a kurzusod számára.
-                                        </DialogDescription>
-                                    </DialogHeader>
-                                    <form action="">
-                                        <div className="grid gap-4 py-4">
-                                            <div className="grid gap-2">
-                                                <label htmlFor="post-name" className="text-sm font-medium leading-none">
-                                                    Poszt címe
-                                                </label>
-                                                <input
-                                                    type="text"
-                                                    id="post-name"
-                                                    className="w-full rounded-md border border-input bg-background px-3 py-2 placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 focus:ring-offset-background disabled:cursor-not-allowed disabled:opacity-50"
-                                                    placeholder="Írd be a poszt címét..."
-                                                />
-                                            </div>
-                                            <div className="grid gap-2">
-                                                <label htmlFor="post-type" className="text-sm font-medium leading-none">
-                                                    Poszt típusa
-                                                </label>
-                                                <select
-                                                    id="post-type"
-                                                    className="w-full rounded-md border border-input bg-background px-3 py-2 placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 focus:ring-offset-background disabled:cursor-not-allowed disabled:opacity-50"
-                                                    value={selectedPostType}
-                                                    onChange={(e) => setSelectedPostType(e.target.value)}
-                                                >
-                                                    {postTypes.map((type) => (
-                                                        <option key={type} value={type}>
-                                                            {postTypeMappings[type] || type}
-                                                        </option>
-                                                    ))}
-                                                </select>
-                                                {selectedPostType === "ASSIGNMENT" && (
-                                                    <p className="text-sm text-muted-foreground">
-                                                        Feladat posztok
-                                                    </p>
-                                                )}
-                                            </div>
-                                            <div className="grid gap-2">
-                                                <label htmlFor="post-content" className="text-sm font-medium leading-none">
-                                                    Poszt tartalma
-                                                </label>
-                                                <textarea
-                                                    id="post-content"
-                                                    className="resize-none w-full rounded-md border border-input bg-background px-3 py-2 placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 focus:ring-offset-background disabled:cursor-not-allowed disabled:opacity-50"
-                                                    rows={5}
-                                                    placeholder="Írd be a poszt tartalmát..."
-                                                />
-                                            </div>
-                                            {selectedPostType === "ASSIGNMENT" && (
-                                                <div className="grid gap-2">
-                                                    <label htmlFor="post-deadline" className="text-sm font-medium leading-none">Határidő</label>
-                                                    <div className="flex gap-2 items-center">
-                                                        <Checkbox className="w-7 h-7" onClick={() => setIsDeadlineEnabled(!isDeadlineEnabled)}></Checkbox>
-                                                        <Popover>
-                                                            <PopoverTrigger asChild className="w-full">
-                                                                <Button
-                                                                    disabled={!isDeadlineEnabled}
-                                                                    variant="outline"
-                                                                    data-empty={!date}
-                                                                    className="data-[empty=true]:text-muted-foreground w-full justify-between text-left font-normal h-8"
-                                                                >
-                                                                    {date ? format(date, "PPP") : <span>Válassz egy dátumot</span>}
-                                                                    <ChevronDownIcon />
-                                                                </Button>
-                                                            </PopoverTrigger>
-                                                            <PopoverContent className="w-auto p-0" align="start">
-                                                                <Calendar
-                                                                    mode="single"
-                                                                    selected={date}
-                                                                    onSelect={setDate}
-                                                                    defaultMonth={date}
-                                                                />
-                                                            </PopoverContent>
-                                                        </Popover>
-                                                    </div>
-                                                </div>
-                                            )}
-                                        </div>
-                                    </form>
-                                    <DialogFooter>
-                                        <Button type="submit" className="w-full">
-                                            Poszt közzététele
-                                        </Button>
-                                    </DialogFooter>
-                                </DialogContent>
-                            </Dialog>
+                            <NewPostDialog courseId={course.id} onNewPostCreated={(post: Post) => {
+                                setCourse((prevCourse: Course | null) => {
+                                    if (!prevCourse) return prevCourse;
+
+                                    return {
+                                        ...prevCourse,
+                                        posts: [post, ...prevCourse.posts],
+                                    };
+                                });
+                            }}/>
                         </div>
                         <div>
-                            
                             {course.posts.length === 0 ? (
                                 <NoPostsCard />
                             ) : (
-                                <div className="space-y-4">
-                                    {/* {course.posts.map((post: any) => (
-                                        
-                                    ))} */}
+                                <div className="flex flex-col gap-4">
+                                    {course.posts.map((post: any) => (
+                                        <PostCard key={post.id} course={course} post={post} />
+                                    ))}
                                 </div>
                             )}
                         </div>
@@ -281,7 +203,11 @@ export default function CoursePage({ params }: { params: Promise<{ courseId: str
                         { course.posts.length === 0 ? (
                             <NoPostsCard />
                         ) : (
-                            <div></div>
+                            <div className="flex flex-col gap-4">
+                                {course.posts.map((post: any) => (
+                                    <PostCard key={post.id} course={course} post={post} />
+                                ))}
+                            </div>
                         )}
                     </div>
                 )}
@@ -337,7 +263,7 @@ export default function CoursePage({ params }: { params: Promise<{ courseId: str
                                             <h1>{student.user.first_name} {student.user.last_name}</h1>
                                         </div>
                                         <div>
-                                            <Button className="mr-2">Jóváhagyás</Button>
+                                            <Button className="mr-2" onClick={(e) => handleApproveStudent(student.user.id)}>Jóváhagyás</Button>
                                             <Button variant="destructive">Elutasítás</Button>
                                         </div>
                                     </div>

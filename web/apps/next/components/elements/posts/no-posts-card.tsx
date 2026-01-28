@@ -31,14 +31,11 @@ export default function NoPostsCard({
                         <Sofa className="h-12 w-12 text-muted-foreground z-10" />
                     </div>
                 </div>
-                <div className="absolute top-2 right-4 w-2 h-2 bg-primary/20 rounded-full" />
-                <div className="absolute bottom-6 left-2 w-3 h-3 bg-accent/30 rounded-full" />
-                <div className="absolute top-8 left-4 w-1.5 h-1.5 bg-primary/30 rounded-full" />
             </div>
           </div>
 
           <h3 className="text-lg font-semibold text-foreground mb-2">Nincsenek bejegyzések</h3>
-          <p className="text-sm text-muted-foreground mb-6 text-balance">Itt jelennek meg a kurzus hirdetményei, feladatai és tananyagai.</p>
+          <p className="text-sm text-muted-foreground mb-6 text-balance">Itt jelennek meg a kurzus közleményei, feladatai és tananyagai.</p>
         </div>
       </CardContent>
     </Card>
