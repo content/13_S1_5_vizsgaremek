@@ -73,3 +73,7 @@
     max-height: var(--radix-dropdown-menu-content-available-height);
   }
 }
+
+.new-post-dialog-poll-options-scrollbar::-webkit-scrollbar {
+  width: 0px;
+}
