@@ -13,6 +13,15 @@ export interface Submission {
     
     attachments: Attachment[];
     
-    history: Submission[];
+    history: HistorySubmission[];
     submittedAt: Date | null;
+    score: number | null;
+}
+
+export interface HistorySubmission {
+    id: number;
+    attachments: Attachment[];
+    submittedAt: Date | null;
+    score: number | null;
+    versionNumber: number;
 }

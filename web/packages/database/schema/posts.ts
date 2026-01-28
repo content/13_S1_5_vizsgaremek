@@ -15,6 +15,20 @@ export const posts = mysqlTable('posts', {
     createdAt: timestamp('created_at').defaultNow().notNull(),
 });
 
+export const pollPostsOptions = mysqlTable('poll_post_options', {
+    id: int('id').autoincrement().primaryKey().$type<number>(),
+    postId: int('post_id').notNull().references(() => posts.id),
+    optionText: varchar('option_text', { length: 255 }).notNull(),
+});
+
+export const pollPostVotes = mysqlTable('poll_post_votes', {
+    id: int('id').autoincrement().primaryKey().$type<number>(),
+    postId: int('post_id').notNull().references(() => posts.id),
+    optionId: int('option_id').notNull().references(() => pollPostsOptions.id),
+    voterId: int('voter_id').notNull().references(() => users.id),
+    createdAt: timestamp('created_at').defaultNow().notNull()
+});
+
 export const comments = mysqlTable('comments', {
     id: int('id').autoincrement().primaryKey().$type<number>(),
     postId: int('post_id').notNull().references(() => posts.id),

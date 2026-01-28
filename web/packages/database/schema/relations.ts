@@ -1,10 +1,9 @@
 import { relations } from 'drizzle-orm';
-import { users, profilePictureAttachments } from './users';
-import { posts } from './posts';
-import { submissions, submissionHistories, submissionStatuses, submissionAttachments } from './submissions';
-import { courses, coursesMembers, backgroundAttachments } from './courses';
 import { attachments } from './attachments';
-import { comments, postMessages, postTypes, postAttachments } from './posts';
+import { backgroundAttachments, courses, coursesMembers } from './courses';
+import { comments, postAttachments, postMessages, posts, postTypes } from './posts';
+import { submissionHistories, submissionHistoryAttachments, submissions, submissionStatuses } from './submissions';
+import { profilePictureAttachments, users } from './users';
 
 export const usersRelations = relations(users, ({ many, one }) => ({
   courseMemberships: many(coursesMembers),
@@ -34,7 +33,6 @@ export const submissionsRelations = relations(submissions, ({ one, many }) => ({
     references: [submissionHistories.id],
   }),
   histories: many(submissionHistories),
-  attachments: many(submissionAttachments),
 }));
 
 export const submissionHistoriesRelations = relations(submissionHistories, ({ one }) => ({
@@ -71,7 +69,7 @@ export const attachmentsRelations = relations(attachments, ({ one, many }) => ({
     references: [users.id],
   }),
   postAttachments: many(postAttachments),
-  submissionAttachments: many(submissionAttachments),
+  submissionHistoryAttachments: many(submissionHistoryAttachments),
   backgroundAttachments: many(backgroundAttachments),
 }));
 
@@ -86,13 +84,13 @@ export const coursesMembersRelations = relations(coursesMembers, ({ one }) => ({
   }),
 }));
 
-export const submissionAttachmentsRelations = relations(submissionAttachments, ({ one }) => ({
+export const submissionAttachmentsRelations = relations(submissionHistoryAttachments, ({ one }) => ({
   submission: one(submissions, {
-    fields: [submissionAttachments.submissionId],
+    fields: [submissionHistoryAttachments.historyId],
     references: [submissions.id],
   }),
   attachment: one(attachments, {
-    fields: [submissionAttachments.attachmentId],
+    fields: [submissionHistoryAttachments.attachmentId],
     references: [attachments.id],
   }),
 }));

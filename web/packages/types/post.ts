@@ -1,4 +1,5 @@
 import { Attachment } from "./attachment";
+import { Submission } from "./submission";
 import { User } from "./user";
 
 export interface Message {
@@ -28,7 +29,15 @@ export interface Post {
     deadlineAt: Date | null;
     isEdited: boolean;
     createdAt: Date;
-    
+    pollPostOptions?: PollPostOption[];
+    submissions?: Submission[];
+
     comments: Comment[];
     attachments: Attachment[];
+}
+
+export interface PollPostOption {
+    id: number;
+    optionText: string;
+    voteCount: number;
 }
