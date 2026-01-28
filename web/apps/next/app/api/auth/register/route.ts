@@ -4,13 +4,13 @@ import { createUser, getUser } from '@studify/database';
 import { Messages } from '@/lib/localization/messages';
 
 export async function POST(request: NextRequest) {
-    const { email, password, firstName, lastName, profilePictureUrl } = await request.formData().then((data) => {
+    const { email, password, firstName, lastName, profilePicture } = await request.formData().then((data) => {
         return {
             email: data.get('email') as string,
             password: data.get('password') as string,
             firstName: data.get('firstName') as string,
             lastName: data.get('lastName') as string,
-            profilePictureUrl: data.get('profile_picture') as string | null,
+            profilePicture: {path: data.get('profile_picture'), name: data.get('profile_picture_file_name')} as {path: string | null, name: string | null},
         };
     });
 
@@ -36,7 +36,7 @@ export async function POST(request: NextRequest) {
             password,
             firstName,
             lastName,
-            profilePictureUrl,
+            profilePicture,
         );
 
         return NextResponse.json({ 

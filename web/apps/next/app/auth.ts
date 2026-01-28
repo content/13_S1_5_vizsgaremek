@@ -1,6 +1,5 @@
-import { getCoursesByUserId, getPassword, getUser } from '@studify/database';
 import { comparePasswords } from '@/lib/encryption/encryption';
-import NextAuth from 'next-auth';
+import { getCoursesByUserId, getPassword, getUser } from '@studify/database';
 import type { AuthOptions, Session } from "next-auth";
 import Credentials from 'next-auth/providers/credentials';
 

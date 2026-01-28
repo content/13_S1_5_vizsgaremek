@@ -8,6 +8,11 @@ export const ourFileRouter = {
             console.log('Upload completed. Filekey: ', file.ufsUrl);
         }
     ),
+    fileUploader: f({ blob: { maxFileSize: '32MB', maxFileCount: 5, minFileCount: 1 } }).onUploadComplete(
+        async ({ metadata, file }) => {
+            console.log('Upload completed. Filekey: ', file.ufsUrl);
+        }
+    ),
 } satisfies FileRouter;
 
 export type OurFileRouter = typeof ourFileRouter;
