@@ -4,19 +4,23 @@
 import { format } from "date-fns";
 
 import { Button } from "@/components/ui/button";
-import { ChevronDownIcon, File, Pencil, Plus, Trash2 } from "lucide-react";
+import { ChevronDownIcon, Clock2Icon, File, Pencil, Plus, Trash2 } from "lucide-react";
 
 import { Calendar } from "@/components/ui/calendar";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import React, { useEffect, useState } from "react";
-import { Field, FieldLabel } from "@/components/ui/field";
+import { Field, FieldGroup, FieldLabel } from "@/components/ui/field";
 import { UploadDropzone } from "@/components/uploadthing/uploadthing";
 import { useNotificationProvider } from "@/components/notification-provider";
 import { useSession } from "next-auth/react";
 import { Post } from "@studify/database";
 import AttachmentUploadCard from "../attachments/attachment-upload-card";
+import { Card, CardContent, CardFooter } from "@/components/ui/card";
+import { InputOTPGroup } from "@/components/ui/input-otp";
+import { InputGroup, InputGroupAddon, InputGroupInput } from "@/components/ui/input-group-addon";
+import DateSelector from "../date-selector";
 
 const newPostModalPages = [
     "PostDetails",
@@ -53,11 +57,12 @@ export default function NewPostDialog({ courseId, onNewPostCreated }: newPostDia
 
     const [postTypes, setPostTypes] = useState<{id: number, name: string}[]>([]);
     const [selectedPostType, setSelectedPostType] = useState<string>("ANNOUNCEMENT");
-    const [selectedPostTypeId, setSelectedPostTypeId] = useState<number>(0);
+    const [selectedPostTypeId, setSelectedPostTypeId] = useState<number>(1);
     
     const [isDeadlineEnabled, setIsDeadlineEnabled] = useState<boolean>(false);
     const [canBeSubmittedAfterDeadline, setCanBeSubmittedAfterDeadline] = useState<boolean>(false);
-    const [date, setDate] = useState<Date>()
+    const [date, setDate] = useState<Date>(new Date());
+    const [maxScore, setMaxScore] = useState<number | null>(null);
 
     const [pollOptions, setPollOptions] = useState<string[]>([]);
 
@@ -118,6 +123,7 @@ export default function NewPostDialog({ courseId, onNewPostCreated }: newPostDia
                     deadlineAt: isDeadlineEnabled && date ? date.toISOString() : null,
                     pollPostOptions: selectedPostType === "POLL" ? pollOptions.filter(option => option.trim() !== "") : [],
                     attachments: attachmentz,
+                    maxScore: maxScore,
                 }),
             });
 
@@ -231,6 +237,10 @@ export default function NewPostDialog({ courseId, onNewPostCreated }: newPostDia
         fetchPostTypes();
     }, []);
 
+    useEffect(() => {
+        console.log(date);
+    }, [date])
+
     return (
         <Dialog open={newPostModalOpen} onOpenChange={setNewPostModalOpen}>
             <DialogTrigger asChild>
@@ -303,39 +313,39 @@ export default function NewPostDialog({ courseId, onNewPostCreated }: newPostDia
                     </div>
                     )}
                     {currNewPostModalPage === newPostModalPages[1] && (
-                        <div className="grid gap-4 py-4">
+                        <div className="grid gap-8 py-4">
                             <div className="grid gap-2">
                                 <label htmlFor="post-deadline" className="text-sm font-medium leading-none">Határidő</label>
-                                <div className="flex gap-2 items-center">
+                                <div className="flex gap-2 items-center w-full">
                                     <Checkbox name="deadline-checkbox" className="w-6 h-6" checked={isDeadlineEnabled} onCheckedChange={(e) => setIsDeadlineEnabled(e)}></Checkbox>
-                                    <Popover>
-                                        <PopoverTrigger asChild className="w-full">
-                                            <Button
-                                                disabled={!isDeadlineEnabled}
-                                                variant="outline"
-                                                data-empty={!date}
-                                                className="data-[empty=true]:text-muted-foreground w-full justify-between text-left font-normal h-8"
-                                            >
-                                                {date ? format(date, "PPP") : <span>Válassz egy dátumot</span>}
-                                                <ChevronDownIcon />
-                                            </Button>
-                                        </PopoverTrigger>
-                                        <PopoverContent className="w-auto p-0" align="start">
-                                            <Calendar
-                                                mode="single"
-                                                selected={date}
-                                                onSelect={setDate}
-                                                defaultMonth={date}
-                                            />
-                                        </PopoverContent>
-                                    </Popover>
+                                    <DateSelector defaultDate={date} onDateChange={setDate} disablePast={true} disabled={!isDeadlineEnabled} className="w-full">
+                                        <Button
+                                            disabled={!isDeadlineEnabled}
+                                            variant="outline"
+                                            data-empty={!date}
+                                            className="data-[empty=true]:text-muted-foreground w-full justify-between text-left font-normal"
+                                            
+                                        >
+                                            {date ? format(date, "PPP") : <span>Válassz egy dátumot</span>}
+                                            <ChevronDownIcon />
+                                        </Button>
+                                    </DateSelector>
                                 </div>
                                 <Field orientation="horizontal" data-disabled>
                                     <Checkbox name="canBeSubmitted-checkbox" className="w-6 h-6" checked={canBeSubmittedAfterDeadline} onCheckedChange={(e) => setCanBeSubmittedAfterDeadline(e)} disabled={!isDeadlineEnabled}></Checkbox>
                                     <FieldLabel htmlFor="canBeSubmitted-checkbox" className={`${!canBeSubmittedAfterDeadline ? "text-muted-foreground" : ""}`}>Leadható határidő után</FieldLabel>
                                 </Field>
-                                <div className="flex gap-2 items-center">
-                                </div>
+                            </div>
+                            <div className="grid gap-2">
+                                <label htmlFor="max-score" className="text-sm font-medium leading-none">Maximális pontszám (opcionális)</label>
+                                <input
+                                    type="number"
+                                    id="max-score"
+                                    className="rounded-md border border-input bg-background px-3 py-2 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 focus:ring-offset-background"
+                                    placeholder="Maximális pontszám"
+                                    value={maxScore !== null ? maxScore : ''}
+                                    onChange={(e) => setMaxScore(e.target.value ? parseInt(e.target.value) : null)}
+                                />
                             </div>
                         </div>
                     )}

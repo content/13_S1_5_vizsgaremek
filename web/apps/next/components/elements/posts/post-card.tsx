@@ -1,18 +1,18 @@
-import { Course, Post } from '@studify/types';
+import { Course, Post, Submission } from '@studify/types';
 
-import { BookMarked, Brain, ChartBarIncreasing, Megaphone, Newspaper } from 'lucide-react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
+import PostTypeMappings from '@/lib/dashboard/courseTypeMappings';
 import { generateColorFromInvitationCode } from '@/lib/dashboard/utils';
 import Link from 'next/link';
-import PostTypeMappings from '@/lib/dashboard/courseTypeMappings';
 import { PostCardHeader } from './post-card-header';
 
 type PostCardProps = {
     course: Course;
     post: Post;
+    submission?: Submission;
 }
 
-export default function PostCard({ course, post }: PostCardProps) {
+export default function PostCard({ course, post, submission }: PostCardProps) {
     const type = post.postType.name;
     const colors = generateColorFromInvitationCode(course.invitationCode);
 
@@ -23,7 +23,7 @@ export default function PostCard({ course, post }: PostCardProps) {
     return (
         <Link href="/dashboard/[courseId]/[postId]" as={`/dashboard/${course.id}/${post.id}`}>
             <Card className="hover:bg-primary/10 hover:shadow-lg transition-shadow duration-200 ease-in-out">
-                <PostCardHeader course={course} post={post} />
+                <PostCardHeader course={course} post={post} submission={submission} />
                 <CardContent className="px-6">
                     <p>{post.description}</p>
                 </CardContent>

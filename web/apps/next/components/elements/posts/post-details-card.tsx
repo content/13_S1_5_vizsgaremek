@@ -1,19 +1,20 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Post, Course, Attachment } from '@studify/types';
+import { Post, Course, Attachment, Submission } from '@studify/types';
 import { PostCardHeader } from './post-card-header';
 import AttachmentCard from '../attachments/attachment-card';
 
 type PostDetailsCardProps = {
     course: Course;
     post: Post;
+    submission?: Submission;
 }
 
-export default function PostDetailsCard({ course, post }: PostDetailsCardProps) {
+export default function PostDetailsCard({ course, post, submission }: PostDetailsCardProps) {
 
     return (
         <div className="flex flex-col gap-4">
             <Card>
-                <PostCardHeader course={course} post={post} />
+                <PostCardHeader course={course} post={post} submission={submission} />
                 <CardContent className="px-6">
                     <div>
                         <p>{post.description}</p>
