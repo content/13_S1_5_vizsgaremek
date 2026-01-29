@@ -1,4 +1,4 @@
-import { and, eq } from 'drizzle-orm';
+import { and, asc, desc, eq } from 'drizzle-orm';
 
 import { submissionHistories, submissions } from '@studify/database/schema/submissions';
 import { Attachment, HistorySubmission, Submission, SubmissionStatus } from '@studify/types';
@@ -115,6 +115,7 @@ export async function getSubmissionHistory(submissionId: number): Promise<Histor
         .select()
         .from(submissionHistories)
         .where(eq(submissionHistories.submissionId, submissionId))
+        .orderBy(desc(submissionHistories.versionNumber))
         .execute();
 
     const histories: HistorySubmission[] = [];
@@ -245,7 +246,7 @@ export async function getSubmissionByPostAndUserId(postId: number, userId: numbe
         submittedAt: submissionRecord.submittedAt,
         score: submissionRecord.score,
         attachments: attachments,
-    }
+    } as unknown as Submission;
 }
 
 export async function getSubmissionStatusById(submissionId: number): Promise<SubmissionStatus> {
@@ -265,4 +266,38 @@ export async function getSubmissionStatusById(submissionId: number): Promise<Sub
         id: submissionRecord.id,
         name: submissionRecord.name,
     } as unknown as SubmissionStatus;
+}
+
+export async function gradeSubmission(submissionId: number, score: number): Promise<boolean> {
+    const result = await db
+        .update(submissions)
+        .set({
+            score: score,
+        })
+        .where(eq(submissions.id, submissionId))
+        .execute();
+
+    return result[0].affectedRows > 0;
+}
+
+export async function updateSubmissionStatus(submissionId: number, statusId: number): Promise<boolean> {
+    const result = await db
+        .update(submissions)
+        .set({
+            statusId: statusId,
+        })
+        .where(eq(submissions.id, submissionId))
+        .execute();
+    return result[0].affectedRows > 0;
+}
+
+export async function updateSubmissionSubmittedAt(submissionId: number, submittedAt: Date | null): Promise<boolean> {
+    const result = await db
+        .update(submissions)
+        .set({
+            submittedAt: submittedAt,
+        })
+        .where(eq(submissions.id, submissionId))
+        .execute();
+    return result[0].affectedRows > 0;
 }

@@ -6,6 +6,7 @@ import { comments, pollPostsOptions, postAttachments, posts, postTypes } from '.
 import { createAttachment, createRelation, getAttachmentsByPostId } from '../attachments/attachments';
 import { getAllSubmissionsByPostId } from '../submissions/submissions';
 import { getCourseMembers } from '../courses/courses';
+import { getUserById, getUserByIdWithoutCourses } from '../users/users';
 
 export async function getPostsByCourseId(courseId: number): Promise<Post[]> {
     const coursePosts = await db
@@ -25,6 +26,7 @@ export async function getPostsByCourseId(courseId: number): Promise<Post[]> {
         const postType = await getPostType(post.postTypeId);
 
         const submissions = await getAllSubmissionsByPostId(post.id);
+        const author = await getUserByIdWithoutCourses(post.authorId);
 
         return {
             id: post.id,
@@ -37,6 +39,8 @@ export async function getPostsByCourseId(courseId: number): Promise<Post[]> {
             comments: commentz,
             attachments: attachments,
             submissions: submissions,
+            maxScore: post.maxScore,
+            author: author,
         };
     })) as unknown as Post[];
 
@@ -82,6 +86,8 @@ export async function getPostById(postId: number): Promise<Post | null> {
         return null;
     }
 
+    const author = await getUserByIdWithoutCourses(post.authorId);
+
     return {
         id: post.id,
         courseId: post.courseId,
@@ -90,7 +96,10 @@ export async function getPostById(postId: number): Promise<Post | null> {
         deadlineAt: post.deadlineAt,
         isEdited: post.isEdited,
         name: post.name,
-        postType: await getPostType(post.postTypeId)
+        postType: await getPostType(post.postTypeId),
+        maxScore: post.maxScore,
+        attachments: await getAttachmentsByPostId(post.id),
+        author: author,
     } as unknown as Post;
 }
 
@@ -128,9 +137,10 @@ type CreateNewPostParams = {
     attachments: {path: string, name: string}[];
     deadlineAt?: Date;
     pollPostOptions?: string[];
+    maxScore: number | null;
 };
 
-export async function createNewPost({ userId, courseId, postTypeId, name, description, deadlineAt, pollPostOptions, attachments }: CreateNewPostParams): Promise<Post> {    
+export async function createNewPost({ userId, courseId, postTypeId, name, description, deadlineAt, pollPostOptions, attachments, maxScore }: CreateNewPostParams): Promise<Post> {    
     const results = await db
         .insert(posts)
         .values({
@@ -138,7 +148,9 @@ export async function createNewPost({ userId, courseId, postTypeId, name, descri
             postTypeId: postTypeId,
             name: name,
             description: description,
-            deadlineAt: deadlineAt || null,
+            deadlineAt: deadlineAt ? new Date(deadlineAt) : null,
+            maxScore: maxScore || null,
+            authorId: userId,
         })
         .execute();
     
@@ -168,6 +180,8 @@ export async function createNewPost({ userId, courseId, postTypeId, name, descri
         attachmentz.push(attachmentRecord);
     }
 
+    const author = await getUserByIdWithoutCourses(userId);
+
     return {
         id: postId,
         name: name,
@@ -179,6 +193,7 @@ export async function createNewPost({ userId, courseId, postTypeId, name, descri
         createdAt: new Date(),
         comments: [],
         attachments: attachmentz,
+        author: author,
     } as unknown as Post;
 }
 

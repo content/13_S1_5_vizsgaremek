@@ -271,7 +271,7 @@ export async function approveUser(courseId: number, userId: number): Promise<boo
         .where(and(eq(coursesMembers.courseId, courseId), eq(coursesMembers.userId, userId)))
         .execute();
 
-    return result.affectedRows > 0;
+    return result[0].affectedRows > 0;
 }
 
 export async function declineUser(courseId: number, userId: number): Promise<boolean> {
@@ -280,5 +280,5 @@ export async function declineUser(courseId: number, userId: number): Promise<boo
         .where(and(eq(coursesMembers.courseId, courseId), eq(coursesMembers.userId, userId)))
         .execute();
 
-    return result.affectedRows > 0;
+    return result[0].affectedRows > 0;
 }

@@ -3,6 +3,7 @@ import { int, mysqlTable, timestamp, varchar, boolean } from 'drizzle-orm/mysql-
 import { courses } from "./courses";
 import { attachments } from "./attachments";
 import { users } from "./users";
+import { sql } from 'drizzle-orm';
 
 export const posts = mysqlTable('posts', {
     id: int('id').autoincrement().primaryKey().$type<number>(),
@@ -11,7 +12,9 @@ export const posts = mysqlTable('posts', {
     description: varchar('description', { length: 1024 }),
     postTypeId: int('post_type_id').notNull().references(() => postTypes.id),
     isEdited: boolean('is_edited').notNull().default(false),
-    deadlineAt: timestamp('deadline_at'),
+    deadlineAt: timestamp('deadline_at').default(sql`NULL`),
+    maxScore: int('max_score'),
+    authorId: int('author_id').notNull().references(() => users.id),
     createdAt: timestamp('created_at').defaultNow().notNull(),
 });
 

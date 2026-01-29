@@ -31,7 +31,8 @@ export interface Post {
     createdAt: Date;
     pollPostOptions?: PollPostOption[];
     submissions?: Submission[];
-
+    maxScore?: number;
+    author: User;
     comments: Comment[];
     attachments: Attachment[];
 }
