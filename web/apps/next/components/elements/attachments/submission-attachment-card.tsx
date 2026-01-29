@@ -7,10 +7,11 @@ import Image from "next/image";
 type SubmissionAttachmentCardProps = {
     name: string;
     url: string;
+    showRemoveButton?: boolean;
     onRemove: (name: string, url: string) => void;
 }
 
-export default function SubmissionAttachmentCard({ name, url, onRemove }: SubmissionAttachmentCardProps) {
+export default function SubmissionAttachmentCard({ name, url, showRemoveButton = true, onRemove }: SubmissionAttachmentCardProps) {
     const [isOpen, setIsOpen] = useState(false);
 
     const extension = name.split('.').pop()?.toLowerCase();
@@ -32,6 +33,7 @@ export default function SubmissionAttachmentCard({ name, url, onRemove }: Submis
 
                     <span className="font-medium truncate">{name}</span>
                 </div>
+                {showRemoveButton && (
                 <Button 
                     type="button"
                     variant="ghost"
@@ -44,6 +46,7 @@ export default function SubmissionAttachmentCard({ name, url, onRemove }: Submis
                 >
                     <Trash2 className="h-4 w-4" />
                 </Button>
+                )}
             </div>
         </AttachmentPreviewDialog>
     )
