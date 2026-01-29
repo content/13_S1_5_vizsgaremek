@@ -1,6 +1,7 @@
 import React from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Submission, HistorySubmission } from "@studify/types";
+import { Submission, HistorySubmission, Attachment } from "@studify/types";
+import AttachmentCard from "../attachments/attachment-card";
 
 type HistorySubmissionDialogProps = {
     submission: Submission;
@@ -27,11 +28,28 @@ export default function HistorySubmissionDialog({ submission, children, historyS
                 <DialogHeader>
                     <DialogTitle className="flex flex-col gap-1">
                         {student.first_name} {student.last_name} korábbi beadott feladata
+                        <p className="text-sm text-muted-foreground">{historySubmission.versionNumber}. verzió</p>
                     </DialogTitle>
                 </DialogHeader>
-                <div className="flex flex-col gap-2">
-                    <p className="whitespace-pre-wrap">{historySubmission.comment || "Nincs megjegyzés a beadott feladathoz."}</p>
-                </div> 
+                {historySubmission.attachments.length > 0 ? (
+                    <div className="flex flex-col gap-4">
+                        <div>
+                            <h2 className="text-md font-semibold">
+                                Csatolmányok
+                            </h2>
+                            <p className="text-sm text-muted-foreground">A beadott anyaghoz csatolt fájlok listája</p>
+                        </div>
+                        <div className="flex gap-2">
+                            {historySubmission.attachments.map((attachment: Attachment) => (
+                                <AttachmentCard key={attachment.id} attachment={attachment} size="small"/>
+                            ))}
+                        </div>
+                    </div>
+                ) : (
+                    <div>
+                        <p className="text-sm text-muted-foreground">Nincsenek csatolmányok ehhez a verzióhoz.</p>
+                    </div>
+                )}
             </DialogContent>
         </Dialog>
     );
