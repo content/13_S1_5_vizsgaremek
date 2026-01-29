@@ -41,10 +41,6 @@ export default function DashboardPage() {
     const [invitationCode, setInvitationCode] = useState("");
 
     useEffect(() => {
-        document.title = "Dashboard - Studify";
-    }, [])
-
-    useEffect(() => {
         if(status === "loading") return;
 
         if(!session || !session.user) {
@@ -77,21 +73,30 @@ export default function DashboardPage() {
     const handleJoinCourse = async () => {
         if(!session || !session.user) return;
 
-        const joinedCourse = await joinCourse(session.user.id, invitationCode);
+        const response = await joinCourse(session.user.id, invitationCode);
 
-        switch(joinedCourse) {
-            case null:
+        switch(response.status) {
+            case 500:
                 console.error("Failed to join course");
                 notify("Hiba történt a kurzushoz való csatlakozáskor.", { type: "error" });
+                setJoinDialogOpen(false);
+                return;
+            case 400:
+                notify("Már kérelmezted a csatlakozást ehhez a kurzushoz!", { type: "error" });
+                setJoinDialogOpen(false);
                 return;
             default:
-                notify("Sikeresen csatlakoztál a kurzushoz!", { type: "success" });
+                notify("Sikeresen kérelmezted a csatlakozást a kurzushoz!", { type: "success" });
+                setJoinDialogOpen(false);
                 break;
         }
 
-        setCourses([...courses, joinedCourse]);
         setJoinDialogOpen(false);
     }
+
+    useEffect(() => {
+        console.log(courses);
+    }, [courses])
 
     return (
         isLoading ? (

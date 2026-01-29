@@ -18,6 +18,7 @@ import { useSession } from "next-auth/react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import React, { useEffect } from "react";
+import { formatInTimeZone } from 'date-fns-tz';
 
 export default function PostPage({ params }: { params: Promise<{ courseId: string, postId: string }> }) {
     const { courseId, postId } = React.use(params);
@@ -35,10 +36,96 @@ export default function PostPage({ params }: { params: Promise<{ courseId: strin
     const [submission, setSubmission] = React.useState<Submission | null>(null);
     const [submissionAttachmentAdditions, setSubmissionAttachmentAdditions] = React.useState<Map<string, [string, string]>>(new Map());
     const [isSubmittingBtnDisabled, setIsSubmittingBtnDisabled] = React.useState<boolean>(false);
+    const [isAddSubmissionAttachmentDialogOpen, setIsAddSubmissionAttachmentDialogOpen] = React.useState<boolean>(false);
+    const [deadlineAt, setDeadlineAt] = React.useState<Date | null>(null);
 
     const tabs = [
         { id: "course", label: "Vissza a kurzushoz", icon: Home, href: `/dashboard/${courseId}` },
-    ]
+    ];
+    
+    const handleSubmissionUnsubmit = async () => {
+        if(!session || !session.user) {
+            notify("Nem vagy bejelentkezve!", { type: "error" });
+            router.push("/login");
+            return;
+        }
+
+        if(!submission) {
+            notify("Nincs leadott munkád ehhez a feladathoz!", { type: "error" });
+            return;
+        }
+
+        const response = await fetch(`/api/submissions/unsubmit`, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+                userId: session.user.id,
+                postId: +postId,
+                submissionId: +submission.id
+            })
+        });
+
+        switch(response.status) {
+            case 200:
+                const data = await response.json();
+                setSubmission(data);
+                notify("Sikeres leadás visszavonás!", { type: "success", description: "A munkád leadása sikeresen visszavonva." });
+                break;
+            case 400:
+                notify("A beadás nincs leadva ehhez a feladathoz!", { type: "error" });
+                break;
+            case 403:
+                notify("Nincs jogosultságod ehhez a művelethez!", { type: "error" });
+                break;
+            default:
+                notify("Hiba történt a művelet során!", { type: "error", description: "Próbáld újra később!" });
+                break;
+        }
+    }
+
+    const handleSubmissionSubmit = async () => {
+        if(!session || !session.user) {
+            notify("Nem vagy bejelentkezve!", { type: "error" });
+            router.push("/login");
+            return;
+        }
+
+        if(!submission) {
+            notify("Nincs leadott munkád ehhez a feladathoz!", { type: "error" });
+            return;
+        }
+
+        const response = await fetch(`/api/submissions/submit`, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+                userId: session.user.id,
+                postId: +postId,
+                submissionId: +submission.id
+            })
+        });
+        
+        switch(response.status) {
+            case 200:
+                const data = await response.json();
+                setSubmission(data);
+                notify("Sikeres beadás!", { type: "success", description: "A munkád sikeresen leadva." });
+                break;
+            case 400:
+                notify("Már leadtad ezt a feladatot!", { type: "error" });
+                break;
+            case 403:
+                notify("Nincs jogosultságod ehhez a művelethez!", { type: "error" });
+                break;
+            default:
+                notify("Hiba történt a művelet során!", { type: "error", description: "Próbáld újra később!" });
+                break;
+        }
+    }
 
     const handleSubmissionAttachmentAdd = async () => {
         if(!session || !session.user) {
@@ -49,7 +136,6 @@ export default function PostPage({ params }: { params: Promise<{ courseId: strin
         
         const endpoint = submission ? "edit" : "create";
         const attachmentz = Array.from(submissionAttachmentAdditions.entries()).map(([name, [url, _type]]) => ({path: url, name: name}));
-        console.log(attachmentz);
 
         const response = await fetch(`/api/submissions/${endpoint}`, {
             method: "POST",
@@ -60,7 +146,7 @@ export default function PostPage({ params }: { params: Promise<{ courseId: strin
                 userId: session?.user?.id,
                 postId: +postId,
                 submissionId: submission ? +submission.id : undefined,
-                attachments: attachmentz
+                attachments: [submission ? submission.attachments.map((att: any) => ({path: att.path, name: att.fileName})) : [], ...attachmentz].flat()
             })
         });
 
@@ -68,9 +154,10 @@ export default function PostPage({ params }: { params: Promise<{ courseId: strin
             case 201:
             case 200:
                 const data = await response.json();
-                setSubmission(data.submission);
+                setSubmission(data);
                 notify("Sikeres hozzáadás!", { type: "success", description: "A munkád sikeresen hozzáadva." });
                 setSubmissionAttachmentAdditions(new Map());
+                setIsAddSubmissionAttachmentDialogOpen(false);
                 break;
             case 403:
                 notify("Nincs jogosultságod ehhez a művelethez!", { type: "error" });
@@ -117,8 +204,8 @@ export default function PostPage({ params }: { params: Promise<{ courseId: strin
         switch(response.status) {
             case 200:
                 const data = await response.json();
-                console.log(data);
-                setSubmission(data.submission);
+                console.log(data);  
+                setSubmission(data);
                 notify("Sikeres eltávolítás!", { type: "success", description: "A melléklet sikeresen eltávolítva." });
                 break;
             case 403:
@@ -156,21 +243,18 @@ export default function PostPage({ params }: { params: Promise<{ courseId: strin
 
         const teachers = tmpCourse.members.filter((cu: CourseMember) => cu.isTeacher);
 
-
         setIsUserTeacher(teachers.some((t: CourseMember) => t.user.id === session.user?.id));
         setCourse(tmpCourse);
         setPost(tmpPost);
-        setPostType(tmpPost.postType.name);
-        setSubmission(tmpPost.submissions.find((s: Submission) => s.student.id === session.user?.id) || null);
-
-        console.log(session);
+        setPostType(tmpPost.postType?.name);
+        setSubmission(tmpPost.submissions?.find((s: Submission) => s.student.id === session.user?.id) || null);
+        setDeadlineAt(tmpPost.deadlineAt ? new Date(tmpPost.deadlineAt) : null);
     }, [session, status, router, courseId, postId]);
 
     useEffect(() => {
         if(!submission) return;
 
         submission.attachments = submission.attachments.map((attachment: any) => {
-            console.log(attachment);
             const name = attachment.fileName;
             const extension = name.split('.').pop()?.toLowerCase() || '';
 
@@ -225,7 +309,7 @@ export default function PostPage({ params }: { params: Promise<{ courseId: strin
                     </div>
                 </Card>
                 <div className={`mt-6 mx-auto w-full max-w-6xl grid grid-cols-1 ${!["ANNOUNCEMENT", "RESOURCE"].includes(postType || "") ? "lg:grid-cols-[2fr_1fr] xl:grid-cols-[3fr_1fr]" : ""} gap-6`}>
-                    <PostDetailsCard course={course} post={post}></PostDetailsCard>
+                    <PostDetailsCard course={course} post={post} submission={submission}></PostDetailsCard>
                     {!["ANNOUNCEMENT", "RESOURCE"].includes(postType || "") && (
                     <div className="flex flex-col gap-3">
                         <Card className="p-2">
@@ -249,24 +333,27 @@ export default function PostPage({ params }: { params: Promise<{ courseId: strin
                                 {!isUserTeacher && (
                                     <div>
                                         <h3 className="flex justify-center font-semibold mb-2">Feladat beadása</h3>
-                                        {!submission || submission.attachments.length === 0 && (
+                                        {!submission || submission.attachments?.length === 0 && (
                                             <p className="text-sm text-center text-muted-foreground mb-5">Még nem adtál le munkát erre a feladatra.</p>
                                         )}
-                                        {submission && submission.attachments.length !== 0 && (
+                                        {submission && submission.attachments?.length !== 0 && (
                                             <div className="flex flex-col gap-2">
-                                                {submission.attachments.map((attachment: any, index: number) => (
+                                                {submission.attachments?.map((attachment: any, index: number) => (
                                                     <SubmissionAttachmentCard 
                                                         key={`SUBMISSION_ATTACHMENT_${index}`}
                                                         name={attachment.fileName}
                                                         url={attachment.path}
+                                                        showRemoveButton={!["SUBMITTED", "GRADED"].includes(submission.status.name)}
                                                         onRemove={(name: string, url: string) => handleSubmissionAttachmentRemove(name, url)}
                                                     />
                                                 ))}
                                             </div>
                                         )}
-                                        <Dialog>
+                                        {(!submission || (submission && !["SUBMITTED", "GRADED"].includes(submission.status?.name))) && (
+                                        <Dialog open={isAddSubmissionAttachmentDialogOpen} onOpenChange={(open) => setIsAddSubmissionAttachmentDialogOpen(open)}>
                                             <DialogTrigger asChild>
                                                 <Button
+                                                    onClick={() => setIsAddSubmissionAttachmentDialogOpen(true)}
                                                     variant={"outline"}
                                                     className="w-full mb-2"
                                                 >
@@ -331,13 +418,42 @@ export default function PostPage({ params }: { params: Promise<{ courseId: strin
                                                 </DialogFooter>
                                             </DialogContent>
                                         </Dialog>
+                                        )}
                                         
+                                        {(submission && !["SUBMITTED", "GRADED"].includes(submission.status?.name) && (
                                         <Button
-                                            className="w-full "
+                                            className="mt-5 w-full"
+                                            onClick={() => handleSubmissionSubmit()}
+                                            disabled={submissionAttachmentAdditions.size > 0 || post.deadlineAt && new Date(post.deadlineAt) < new Date()}
                                         >
                                             Beadás
                                         </Button>
-                                    </div>
+                                        ))}
+                                        {(submission && submission.status?.name === "SUBMITTED") && (
+                                        <Button
+                                            className="mt-5 w-full"
+                                            onClick={() => handleSubmissionUnsubmit()}
+                                            disabled={submissionAttachmentAdditions.size > 0 || (post.deadlineAt && new Date(post.deadlineAt) < new Date())}
+                                        >
+                                            Beadás visszavonása
+                                        </Button>
+                                        )}
+                                        {(submission && submission.status?.name === "GRADED") && (
+                                        <Button
+                                            className="mt-5 w-full "
+                                            disabled
+                                        >
+                                            Osztályozva
+                                        </Button>
+                                        )}
+                                        {post.deadlineAt && (
+                                            <div className="text-center text-muted-foreground pt-3 flex flex-col">
+                                                Határidő: 
+                                                <span>{formatInTimeZone(new Date(post.deadlineAt), 'Europe/Budapest', 'yyyy/MM/dd HH:mm:ss')}</span>
+                                            </div>
+                                        )}
+                                        
+                                  </div>
                                 )}
                             </div>
                         </Card>

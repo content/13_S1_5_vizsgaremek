@@ -2,7 +2,7 @@ import { approveUser, isUserTeacher } from "@studify/database";
 import { NextRequest, NextResponse } from "next/server";
 
 export async function POST(req: NextRequest, { params }: { params: { id: string } }) {
-    const courseId = await params.id;
+    const courseId = (await params).id;
     const { initiatorId, targetId } = await req.json();
 
     const isInitiatorTeacher = await isUserTeacher(+courseId, initiatorId);

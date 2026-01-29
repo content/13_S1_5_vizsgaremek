@@ -12,9 +12,9 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({ error: "Invalid invitation code" }, { status: 400 });
     }
 
-    const isMember = course.members.some((member: CourseMember) => member.userId === userId);
+    const isMember = course.members.some((member: CourseMember) => member.user.id === userId);
     if (isMember) {
-        return NextResponse.json({ error: "User is already a member of the course" }, { status: 400 });
+        return NextResponse.json({ error: "User is already a member of the course or has already applied" }, { status: 400 });
     }
 
     const joinedCourse = await joinCourse(userId, invitationCode);

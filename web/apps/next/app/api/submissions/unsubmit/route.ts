@@ -30,20 +30,20 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({ message: "Submission not found in post" }, { status: 404 });
     }
 
-    const hasSubmitted = submission.status.id === 2;
-    if(hasSubmitted) {
-        return NextResponse.json({ message: "Already submitted" }, { status: 400 });
+    const isSubmitted = submission.status.id === 2;
+    if(!isSubmitted) {
+        return NextResponse.json({ message: "Submission is not submitted" }, { status: 400 });
     }
 
     const isGraded = submission.status.id === 3;
     if(isGraded) {
-        return NextResponse.json({ message: "Cannot submit a graded submission" }, { status: 400 });
+        return NextResponse.json({ message: "Cannot unsubmit a graded submission" }, { status: 400 });
     }
 
-    const isStatusUpdateSuccessful = await updateSubmissionStatus(+submissionId, 2);
-    const isSubmittedDateUpdateSuccessful = await updateSubmissionSubmittedAt(+submissionId, new Date());
+    const isStatusUpdateSuccessful = await updateSubmissionStatus(+submissionId, 1);
+    const isSubmittedDateUpdateSuccessful = await updateSubmissionSubmittedAt(+submissionId, null);
     if(!isStatusUpdateSuccessful || !isSubmittedDateUpdateSuccessful) {
-        return NextResponse.json({ message: "Failed to submit submission" }, { status: 500 });
+        return NextResponse.json({ message: "Failed to unsubmit submission" }, { status: 500 });
     }
 
     const updatedSubmission = await getSubmissionById(+submissionId);

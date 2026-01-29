@@ -2,13 +2,13 @@ import { createNewPost, getCourseById, getPostTypes } from "@studify/database";
 import { NextRequest, NextResponse } from "next/server";
 
 export async function POST(req: NextRequest) {
-    const { userId, courseId, postTypeId, name, description, deadlineAt, pollPostOptions, attachments } = await req.json();
+    const { userId, courseId, postTypeId, name, description, deadlineAt, pollPostOptions, attachments, maxScore } = await req.json();
 
     if (!userId) {
         return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
     
-    console.log(postTypeId);
+    console.log(deadlineAt);
 
     const postTypes = await getPostTypes();
     if(!postTypes.find(pt => pt.id === postTypeId)) {
@@ -20,15 +20,18 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({ error: "Course not found" }, { status: 404 });
     }
 
+    console.log(new Date(deadlineAt));
+
     const post = await createNewPost({
         userId: userId,
         courseId,
         postTypeId,
         name,
         description,
-        deadlineAt: deadlineAt ? new Date(deadlineAt) : undefined,
+        deadlineAt: deadlineAt ? deadlineAt : undefined,
         pollPostOptions,
         attachments: attachments,
+        maxScore: maxScore,
     });
 
     return NextResponse.json({ post }, { status: 201 });

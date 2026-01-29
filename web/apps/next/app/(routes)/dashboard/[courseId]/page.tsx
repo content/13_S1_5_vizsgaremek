@@ -7,7 +7,7 @@ import React, { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 
 import { Button } from "@/components/ui/button";
-import { ClipboardList, Home, Info, Users } from "lucide-react";
+import { ClipboardList, Home, Info, Users, UsersIcon } from "lucide-react";
 
 import { UserAvatar } from "@/components/elements/avatar";
 import NoPostsCard from "@/components/elements/posts/no-posts-card";
@@ -19,7 +19,7 @@ import { generateColorFromInvitationCode } from "@/lib/dashboard/utils";
 import CourseBanner from "@/components/elements/course-banner";
 import PostCard from "@/components/elements/posts/post-card";
 
-import { Post } from "@studify/database";
+import { Post, Submission } from "@studify/database";
 import { useNotificationProvider } from "@/components/notification-provider";
 
 export default function CoursePage({ params }: { params: Promise<{ courseId: string }> }) {
@@ -41,6 +41,34 @@ export default function CoursePage({ params }: { params: Promise<{ courseId: str
     const [teacherNames, setTeacherNames] = useState<string[]>([]);
     const [colors, setColors] = useState<{ bg: string; text: string, neutralBgText: string }>({ bg: '', text: '', neutralBgText: '' });
 
+    const handleDeclineStudent = async (studentId: number) => {
+        const response = await fetch(`/api/courses/${courseId}/members/decline`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                initiatorId: session?.user?.id,
+                targetId: studentId,
+            }),
+        });
+
+        switch (response.status) {
+            case 200:
+                notify("Sikeres elutasítás", { type: "success", description: "A tanuló jelentkezése sikeresen elutasítva." });
+                setUnverifiedStudents((prev) => prev.filter((member) => member.user.id !== studentId));
+                break;
+            case 401:
+                notify("Sikertelen elutasítás", { type: "error", description: "Nincs jogosultságod a művelet végrehajtásához." });
+                break;
+            case 500:
+                notify("Sikertelen elutasítás", { type: "error", description: "Hiba történt a tanuló jelentkezésének elutasítása során." });
+                break;
+            default:
+                notify("Sikertelen elutasítás", { type: "error", description: "Ismeretlen hiba történt." });
+        }
+    }
+
     const handleApproveStudent = async (studentId: number) => {
         const response = await fetch(`/api/courses/${courseId}/members/approve`, {
             method: 'POST',
@@ -60,7 +88,7 @@ export default function CoursePage({ params }: { params: Promise<{ courseId: str
                 setCourse((prevCourse: Course) => {
                     if (!prevCourse) return prevCourse;
                     const updatedMembers = prevCourse.members.map((member: CourseMember) => {
-                        if (member.id === studentId) {
+                        if (member.user.id === studentId) {
                             return { ...member, isApproved: true };
                         }
                         return member;
@@ -69,14 +97,14 @@ export default function CoursePage({ params }: { params: Promise<{ courseId: str
                 });
 
                 setStudents((prev) => {
-                    const approvedStudent = unverfiedStudents.find((member) => member.id === studentId);
+                    const approvedStudent = unverfiedStudents.find((member) => member.user.id === studentId);
                     if (approvedStudent) {
                         return [...prev, { ...approvedStudent, isApproved: true }];
                     }
                     return prev;
                 });
                 
-                setUnverifiedStudents((prev) => prev.filter((member) => member.id !== studentId));
+                setUnverifiedStudents((prev) => prev.filter((member) => member.user.id !== studentId));
                 break;
             case 401:
                 notify("Sikertelen jóváhagyás", { type: "error", description: "Nincs jogosultságod a művelet végrehajtásához." });
@@ -89,6 +117,20 @@ export default function CoursePage({ params }: { params: Promise<{ courseId: str
         }
                 
     }
+
+    useEffect(() => {
+        if(!session || !session.user || !course) return;
+
+        // Overwrite the session course data with the new data
+        const updatedCourses = session.user.courses.map((c: Course) => {
+            if(c.id === course.id) {
+                return course;
+            }
+            return c;
+        });
+
+        session.user.courses = updatedCourses;
+    }, [course]);
 
     useEffect(() => {
         if(status === "loading") return;
@@ -165,24 +207,26 @@ export default function CoursePage({ params }: { params: Promise<{ courseId: str
                     <div className="grid grid-cols-1 lg:grid-cols-[1fr_2fr] xl:grid-cols-[1fr_4fr] gap-6">
                         <div className="flex flex-col gap-4">
                             <Card>
-                                <div className="p-4" />
-                            </Card>
-                            <Card>
                                 <div className="p-4">
                                     <p>Kurzus kód:</p>
                                     <h2 className="font-mono font-bold text-lg select-all">{course.invitationCode}</h2>
                                 </div>
                             </Card>
-                            <NewPostDialog courseId={course.id} onNewPostCreated={(post: Post) => {
-                                setCourse((prevCourse: Course | null) => {
-                                    if (!prevCourse) return prevCourse;
+                            {isUserTeacher && (
+                                <NewPostDialog courseId={course.id} onNewPostCreated={(post: Post) => {
+                                    setCourse((prevCourse: Course | null) => {
+                                        if (!prevCourse) return prevCourse;
 
-                                    return {
-                                        ...prevCourse,
-                                        posts: [post, ...prevCourse.posts],
-                                    };
-                                });
-                            }}/>
+                                        console.log(post);
+                                        
+
+                                        return {
+                                            ...prevCourse,
+                                            posts: [post, ...prevCourse.posts],
+                                        };
+                                    });
+                                }}/>
+                            )}
                         </div>
                         <div>
                             {course.posts.length === 0 ? (
@@ -190,12 +234,11 @@ export default function CoursePage({ params }: { params: Promise<{ courseId: str
                             ) : (
                                 <div className="flex flex-col gap-4">
                                     {course.posts.map((post: any) => (
-                                        <PostCard key={post.id} course={course} post={post} />
+                                        <PostCard key={post.id} course={course} post={post} submission={post.submissions?.find((s: Submission) => s.student.id === session?.user?.id) || null} />
                                     ))}
                                 </div>
                             )}
-                        </div>
-                        
+                        </div>    
                     </div>
                 )}
                 {activeTab === "assignments" && (
@@ -205,7 +248,7 @@ export default function CoursePage({ params }: { params: Promise<{ courseId: str
                         ) : (
                             <div className="flex flex-col gap-4">
                                 {course.posts.map((post: any) => (
-                                    <PostCard key={post.id} course={course} post={post} />
+                                    <PostCard key={post.id} course={course} post={post} submission={post.submissions.find((s: Submission) => s.student.id === session?.user?.id) || null} />
                                 ))}
                             </div>
                         )}
@@ -264,7 +307,7 @@ export default function CoursePage({ params }: { params: Promise<{ courseId: str
                                         </div>
                                         <div>
                                             <Button className="mr-2" onClick={(e) => handleApproveStudent(student.user.id)}>Jóváhagyás</Button>
-                                            <Button variant="destructive">Elutasítás</Button>
+                                            <Button variant="destructive" onClick={(e) => handleDeclineStudent(student.user.id)}>Elutasítás</Button>
                                         </div>
                                     </div>
                                 ))}

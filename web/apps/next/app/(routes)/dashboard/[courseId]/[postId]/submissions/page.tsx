@@ -65,8 +65,10 @@ export default function SubmissionsPage({ params }: { params: Promise<{ courseId
             return;
         }
 
-        const submittedSubmissionz = userPost.submissions.filter((s: Submission) => s.status === "SUBMITTED");
+        const submittedSubmissionz = userPost.submissions.filter((s: Submission) => s.status.name === "SUBMITTED");
         
+        console.log(userPost.submissions);
+
         setCourse(userCourse);
         setPost(userPost);
         setIsUserTeacher(isUserTeacher);
@@ -132,7 +134,7 @@ export default function SubmissionsPage({ params }: { params: Promise<{ courseId
                         </div>
                         <div className="flex flex-col gap-4">
                             {submissions.map((submission) => (
-                                <SubmissionCard key={submission.id} href={`/dashboard/${courseId}/${postId}/submissions/${submission.id}`} submission={submission} />
+                                <SubmissionCard key={submission.id} href={`/dashboard/${courseId}/${postId}/submissions/${submission.id}`} submission={submission} post={post} />
                             ))}
                         </div>
                     </div>

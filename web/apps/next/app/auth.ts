@@ -2,6 +2,7 @@ import { comparePasswords } from '@/lib/encryption/encryption';
 import { getCoursesByUserId, getPassword, getUser } from '@studify/database';
 import type { AuthOptions, Session } from "next-auth";
 import Credentials from 'next-auth/providers/credentials';
+import { CourseMember, Course } from '@studify/types';
 
 export const authConfig: AuthOptions = {
     providers: [
@@ -71,7 +72,7 @@ export const authConfig: AuthOptions = {
             user.created_at = token.created_at;
             
             const courses = await getCoursesByUserId(token.id);
-            user.courses = courses;
+            user.courses = courses.filter((c: Course) => c.members.some((m: CourseMember) => m.user.id === token.id && m.isApproved));
             
             return session;
         },
@@ -84,10 +85,8 @@ export const authConfig: AuthOptions = {
                 token.email = user.email;
                 token.profile_picture = user.profile_picture;
                 token.created_at = user.created_at;
-
-                const courses = await getCoursesByUserId(user.id);
-                token.courses = courses;
             }
+            
             if (trigger === 'update') {
                 token.first_name = session.first_name;
                 token.last_name = session.last_name;
