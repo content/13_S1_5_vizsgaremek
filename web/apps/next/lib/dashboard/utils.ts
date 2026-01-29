@@ -33,7 +33,7 @@ export async function joinCourse(userId: number, invitationCode: string): Promis
     });
 
     try {
-        return await response.json();
+        return response;
     } catch (error) {
         return null;
     }
