@@ -10,9 +10,10 @@ type PostCardProps = {
     course: Course;
     post: Post;
     submission?: Submission;
+    showCourseName?: boolean;
 }
 
-export default function PostCard({ course, post, submission }: PostCardProps) {
+export default function PostCard({ course, post, submission, showCourseName=false }: PostCardProps) {
     const type = post.postType.name;
     const colors = generateColorFromInvitationCode(course.invitationCode);
 
@@ -23,10 +24,12 @@ export default function PostCard({ course, post, submission }: PostCardProps) {
     return (
         <Link href="/dashboard/[courseId]/[postId]" as={`/dashboard/${course.id}/${post.id}`}>
             <Card className="hover:bg-primary/10 hover:shadow-lg transition-shadow duration-200 ease-in-out">
-                <PostCardHeader course={course} post={post} submission={submission} />
-                <CardContent className="px-6">
-                    <p>{post.description}</p>
-                </CardContent>
+                <PostCardHeader course={course} post={post} submission={submission} showCourseName={showCourseName} />
+                {post.description && (
+                    <CardContent className="px-6">
+                        <p>{post.description}</p>
+                    </CardContent>
+                )}
             </Card>
         </Link>
     )

@@ -1,4 +1,5 @@
 import { DashboardSidebar } from "@/components/dashboard-sidebar-prodiver"
+import { TooltipProvider } from "@/components/ui/tooltip"
 import type { ReactNode } from "react"
 
 export default function RootLayout({
@@ -8,7 +9,9 @@ export default function RootLayout({
 }) {
   return (
     <DashboardSidebar>
-      {children}
+      <TooltipProvider>
+        {children}
+      </TooltipProvider>
     </DashboardSidebar>
   )
 }

@@ -14,11 +14,14 @@ import { Input } from "./ui/input";
 import { createCourse, joinCourse } from "@/lib/dashboard/utils";
 import { useNotificationProvider } from "./notification-provider";
 import { UploadDropzone } from "./uploadthing/uploadthing";
+import { useRouter } from "next/navigation";
 
 export function DashboardSidebar({ children }: { children: React.ReactNode }) {
     const { notify } = useNotificationProvider();
     const { data: session } = useSession();
     
+    const [currentPage, setCurrentPage] = React.useState("dashboard");
+
     const [createDialogOpen, setCreateDialogOpen] = React.useState(false);
     const [joinDialogOpen, setJoinDialogOpen] = React.useState(false);
     const [sidebarOpen, setSidebarOpen] = React.useState(false);
@@ -33,9 +36,9 @@ export function DashboardSidebar({ children }: { children: React.ReactNode }) {
     const [invitationCode, setInvitationCode] = React.useState("");
 
     const navItems = [
-        { icon: Home, label: "Kurzusaid", href: "/dashboard", active: true },
-        { icon: Calendar, label: "Naptár", href: "/calendar", active: false },
-        { icon: Settings, label: "Beállítások", href: "/settings", active: false },
+        { icon: Home, label: "Kurzusaid", href: "/dashboard", active: currentPage === "Kurzusaid" },
+        { icon: Calendar, label: "Naptár", href: "/calendar", active: currentPage === "Naptár" },
+        { icon: Settings, label: "Beállítások", href: "/settings", active: currentPage === "Beállítások" },
     ];
 
     const handleCreateCourse = async () => {
@@ -99,6 +102,15 @@ export function DashboardSidebar({ children }: { children: React.ReactNode }) {
         setMonogram(monogramLetters.join(""));
         setProfilePictureUrl(session.user.profile_picture || "");
     }, [session]);
+
+    useEffect(() => {
+        const path = window.location.pathname;
+        const navItem = navItems.find(item => item.href === path);
+        if(navItem) {
+            console.log(navItem.label);
+            setCurrentPage(navItem.label);
+        }
+    }, [navItems]);
 
     return (
         <div className="min-h-screen bg-background flex">
