@@ -7,12 +7,16 @@ import React, { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 
 import { Button } from "@/components/ui/button";
-import { ClipboardList, Home, Info, Users, UsersIcon } from "lucide-react";
+import { Brush, ClipboardList, Home, Info, Users, UsersIcon } from "lucide-react";
 
 import { UserAvatar } from "@/components/elements/avatar";
 import NoPostsCard from "@/components/elements/posts/no-posts-card";
 import NewPostDialog from "@/components/elements/posts/post-dialog";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
+import { Textarea } from "@/components/ui/textarea";
 import { Skeleton } from "@/components/ui/skeleton";
 import { generateColorFromInvitationCode } from "@/lib/dashboard/utils";
 
@@ -21,6 +25,17 @@ import PostCard from "@/components/elements/posts/post-card";
 
 import { Post, Submission } from "@studify/database";
 import { useNotificationProvider } from "@/components/notification-provider";
+
+type CourseSettingsForm = {
+    name: string;
+    description: string;
+    showInviteCode: boolean;
+    allowComments: boolean;
+    bannerUrl: string;
+    accentColor: string;
+    autoApproveMembers: boolean;
+    autoRejectMembers: boolean;
+};
 
 export default function CoursePage({ params }: { params: Promise<{ courseId: string }> }) {
     const { courseId } = React.use(params);
@@ -31,7 +46,8 @@ export default function CoursePage({ params }: { params: Promise<{ courseId: str
     const { data: session, status } = useSession();
 
     const [activeTab, setActiveTab] = useState<string>("stream");
-    
+    const [activeSettingsTab, setActiveSettingsTab] = useState<string>("general");
+
     const [isUserTeacher, setIsUserTeacher] = useState<boolean>(false);
     const [course, setCourse] = useState<Course | null>(null);
     const [teachers, setTeachers] = useState<CourseMember[]>([]);
@@ -40,6 +56,16 @@ export default function CoursePage({ params }: { params: Promise<{ courseId: str
     
     const [teacherNames, setTeacherNames] = useState<string[]>([]);
     const [colors, setColors] = useState<{ bg: string; text: string, neutralBgText: string }>({ bg: '', text: '', neutralBgText: '' });
+    const [settingsForm, setSettingsForm] = useState<CourseSettingsForm>({
+        name: "",
+        description: "",
+        showInviteCode: true,
+        allowComments: true,
+        bannerUrl: "",
+        accentColor: "#3b82f6",
+        autoApproveMembers: false,
+        autoRejectMembers: false,
+    });
 
     const handleDeclineStudent = async (studentId: number) => {
         const response = await fetch(`/api/courses/${courseId}/members/decline`, {
@@ -133,6 +159,16 @@ export default function CoursePage({ params }: { params: Promise<{ courseId: str
     }, [course]);
 
     useEffect(() => {
+        if (!course) return;
+
+        setSettingsForm((prev) => ({
+            ...prev,
+            name: course.name,
+            bannerUrl: course.backgroundImage?.path || "",
+        }));
+    }, [course]);
+
+    useEffect(() => {
         if(status === "loading") return;
 
         if(!session || !session.user) {
@@ -163,10 +199,41 @@ export default function CoursePage({ params }: { params: Promise<{ courseId: str
         setColors(generateColorFromInvitationCode(tmpCourse.invitationCode));
     }, [session, status, courseId, router]);
 
+    const handleSettingsChange = <K extends keyof CourseSettingsForm>(key: K, value: CourseSettingsForm[K]) => {
+        setSettingsForm((prev) => ({
+            ...prev,
+            [key]: value,
+        }));
+    };
+
+    const handleSettingsSave = (event: React.FormEvent<HTMLFormElement>) => {
+        event.preventDefault();
+
+        setCourse((prevCourse) => {
+            if (!prevCourse) return prevCourse;
+            return {
+                ...prevCourse,
+                name: settingsForm.name.trim() || prevCourse.name,
+            };
+        });
+
+        notify("Beallitasok elmentve", {
+            type: "success",
+            description: "A valtozasok jelenleg csak ezen az oldalon latszanak.",
+        });
+    };
+
     const tabs = [
-        { id: "stream", label: "Hírfolyam", icon: Home },
-        { id: "assignments", label: "Feladatok", icon: ClipboardList },
-        { id: "members", label: "Résztvevők", icon: Users },
+        { id: "stream", label: "Hírfolyam", icon: Home, isVisible: true },
+        { id: "assignments", label: "Feladatok", icon: ClipboardList, isVisible: true },
+        { id: "members", label: "Résztvevők", icon: Users, isVisible: true },
+        { id: "settings", label: "Beállítások", icon: Info, isVisible: isUserTeacher },
+    ]
+
+    const settingsTabs = [
+        { id: "general", label: "Általános", icon: Info },
+        { id: "appearance", label: "Megjelenés", icon: Brush },
+        { id: "Tagok", label: "Tagok", icon: Users },
     ]
 
     return !course ? (
@@ -191,15 +258,17 @@ export default function CoursePage({ params }: { params: Promise<{ courseId: str
                 <Card className="p-4 rounded-lg">
                     <div className="flex flex-col space-y-2 lg:flex-row lg:space-y-0 lg:space-x-4">
                         {tabs.map((tab) => (
-                            <Button 
-                                key={tab.id} 
-                                variant="ghost" 
-                                className={`${activeTab === tab.id ? `bg-primary/10` : ""} flex items-center space-x-2`}
-                                onClick={() => setActiveTab(tab.id)}
-                            >
-                                <tab.icon className={`h-5 w-5 ${activeTab === tab.id ? colors.neutralBgText : ""}`} />
-                                <span className={activeTab === tab.id ? colors.neutralBgText : ""}>{tab.label}</span>
-                            </Button>
+                            tab.isVisible && (
+                                <Button 
+                                    key={tab.id} 
+                                    variant="ghost" 
+                                    className={`${activeTab === tab.id ? `bg-primary/10` : ""} flex items-center space-x-2`}
+                                    onClick={() => setActiveTab(tab.id)}
+                                >
+                                    <tab.icon className={`h-5 w-5 ${activeTab === tab.id ? colors.neutralBgText : ""}`} />
+                                    <span className={activeTab === tab.id ? colors.neutralBgText : ""}>{tab.label}</span>
+                                </Button>
+                            )
                         ))}
                     </div>
                 </Card>
@@ -314,6 +383,138 @@ export default function CoursePage({ params }: { params: Promise<{ courseId: str
                             </CardContent>
                         </Card>
                         )}
+                    </div>
+                )}
+                {activeTab === "settings" && (
+                    <div className="grid grid-cols-1 lg:grid-cols-[1fr_2fr] xl:grid-cols-[1fr_4fr] gap-6">
+                        <div className="flex flex-col gap-4">
+                            <Card className="flex flex-col gap-2 p-2">
+                                {settingsTabs.map((tab) => (
+                                    <Button 
+                                        key={`settings-tab-${tab.id}`} 
+                                        variant="ghost" 
+                                        className={`justify-start ${activeSettingsTab === tab.id ? `bg-primary/10` : ""} flex items-center space-x-2 w-full`}
+                                        onClick={() => setActiveSettingsTab(tab.id)}
+                                    >
+                                        <tab.icon className={`h-5 w-5 ${activeSettingsTab === tab.id ? colors.neutralBgText : ""}`} />
+                                        <span className={activeSettingsTab === tab.id ? colors.neutralBgText : ""}>{tab.label}</span>
+                                    </Button>
+                                ))}
+                            </Card>
+                        </div>
+                        <form onSubmit={handleSettingsSave} className="space-y-4">
+                            {activeSettingsTab === "general" && (
+                                <Card className="p-4 space-y-6">
+                                    <div>
+                                        <h1 className="text-lg font-semibold mb-2">Általános beállítások</h1>
+                                        <p className="text-sm text-muted-foreground">A kurzus alapadatai és jogosultságai.</p>
+                                    </div>
+                                    <div className="flex items-center justify-between gap-4 rounded-lg border border-border p-3">
+                                        <div>
+                                            <p className="font-medium">Meghívó kód megjelenítése</p>
+                                            <p className="text-sm text-muted-foreground">A kurzus meghívókódja megjelenítése a tanulók számára.</p>
+                                        </div>
+                                        <Switch
+                                            checked={settingsForm.showInviteCode}
+                                            onCheckedChange={(value) => handleSettingsChange("showInviteCode", value)}
+                                        />
+                                    </div>
+                                    <div className="flex items-center justify-between gap-4 rounded-lg border border-border p-3">
+                                        <div>
+                                            <p className="font-medium">Posztokhoz való hozzászólások engedélyezése</p>
+                                            <p className="text-sm text-muted-foreground">Engedélyezi a tanulóknak, hogy hozzászóljanak a kurzus posztjaihoz.</p>
+                                        </div>
+                                        <Switch
+                                            checked={settingsForm.allowComments}
+                                            onCheckedChange={(value) => handleSettingsChange("allowComments", value)}
+                                        />
+                                    </div>
+                                    <div className="flex items-center justify-end">
+                                        <Button type="submit">Mentés</Button>
+                                    </div>
+                                </Card>
+                            )}
+                            {activeSettingsTab === "appearance" && (
+                                <Card className="p-4 space-y-6">
+                                    <div>
+                                        <h1 className="text-lg font-semibold mb-2">Megjelenés beállítások</h1>
+                                        <p className="text-sm text-muted-foreground">Vizuális elemek testreszabása.</p>
+                                    </div>
+                                    <div className="space-y-2">
+                                        <Label htmlFor="course-name">Kurzus neve</Label>
+                                        <Input
+                                            id="course-name"
+                                            value={settingsForm.name}
+                                            onChange={(event) => handleSettingsChange("name", event.target.value)}
+                                            placeholder="Pelda: Webfejlesztes 101"
+                                        />
+                                    </div>
+                                    <div className="space-y-2">
+                                        <Label htmlFor="banner-url">Banner kep URL</Label>
+                                        <Input
+                                            id="banner-url"
+                                            value={settingsForm.bannerUrl}
+                                            onChange={(event) => handleSettingsChange("bannerUrl", event.target.value)}
+                                            placeholder="https://..."
+                                        />
+                                        <p className="text-xs text-muted-foreground">Ha nincs megadva, az alapertelmezett banner marad.</p>
+                                    </div>
+                                    <div className="space-y-2">
+                                        <Label htmlFor="accent-color">Akcent szin</Label>
+                                        <div className="flex items-center gap-3">
+                                            <Input
+                                                id="accent-color"
+                                                type="color"
+                                                value={settingsForm.accentColor}
+                                                onChange={(event) => handleSettingsChange("accentColor", event.target.value)}
+                                                className="h-10 w-16 p-1"
+                                            />
+                                            <Input
+                                                value={settingsForm.accentColor}
+                                                onChange={(event) => handleSettingsChange("accentColor", event.target.value)}
+                                                placeholder="#3b82f6"
+                                            />
+                                        </div>
+                                    </div>
+                                    <div className="flex items-center justify-end">
+                                        <Button type="submit">Mentés</Button>
+                                    </div>
+                                </Card>
+                            )}
+                            {activeSettingsTab === "Tagok" && (
+                                <Card className="p-4 space-y-6">
+                                    <div>
+                                        <h1 className="text-lg font-semibold mb-2">Jelentkezések beállításai</h1>
+                                        <p className="text-sm text-muted-foreground">Jelentkezések és jogosultságok kezelése.</p>
+                                    </div>
+                                    <div className="flex items-center justify-between gap-4 rounded-lg border border-border p-3">
+                                        <div>
+                                            <p className="font-medium">Jelentkezések autómatikus jóváhagyása</p>
+                                            <p className="text-sm text-muted-foreground">Az új jelentkezők azonnal csatlakoznak.</p>
+                                        </div>
+                                        <Switch
+                                            disabled={settingsForm.autoRejectMembers}
+                                            checked={settingsForm.autoApproveMembers}
+                                            onCheckedChange={(value) => handleSettingsChange("autoApproveMembers", value)}
+                                        />
+                                    </div>
+                                    <div className="flex items-center justify-between gap-4 rounded-lg border border-border p-3">
+                                        <div>
+                                            <p className="font-medium">Jelentkezések autómatikus elutasítása</p>
+                                            <p className="text-sm text-muted-foreground">Az új jelentkezők automatikusan elutasítva lesznek.</p>
+                                        </div>
+                                        <Switch
+                                            disabled={settingsForm.autoApproveMembers}
+                                            checked={settingsForm.autoRejectMembers}
+                                            onCheckedChange={(value) => handleSettingsChange("autoRejectMembers", value)}
+                                        />
+                                    </div>
+                                    <div className="flex items-center justify-end">
+                                        <Button type="submit">Mentés</Button>
+                                    </div>
+                                </Card>
+                            )}
+                        </form>
                     </div>
                 )}
             </div>

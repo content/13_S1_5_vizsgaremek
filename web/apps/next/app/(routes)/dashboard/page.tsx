@@ -100,7 +100,7 @@ export default function DashboardPage() {
 
     return (
         isLoading ? (
-            <div>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 pe-36">
                 <p>Betöltés...</p>
             </div>
         ) : (
