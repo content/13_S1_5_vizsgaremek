@@ -12,6 +12,6 @@ describe('Bejelentkezés e2e', () => {
     
     })
     cy.get('form').should('not.exist')
+    cy.contains('Hibás bejelentkezés').should('be.visible')
   })
-  cy.contains('Hibás bejelentkezés').should('be.visible')
 })
