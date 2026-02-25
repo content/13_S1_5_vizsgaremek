@@ -8,13 +8,11 @@ import { getCoursesByUserId } from "../courses/courses";
 import { attachments } from '../../schema/attachments';
 
 export async function createUser(email: string, password: string, firstName: string, lastName: string, profilePicture: {path: string | null, name: string | null}): Promise<User | null> {
-    const hashedPassword = await bcrypt.hash(password, 10);
-
     const results = await db
         .insert(users)
         .values({
             email,
-            password: hashedPassword,
+            password,
             firstName,
             lastName
         })
@@ -77,6 +75,16 @@ export async function getPassword(email: string): Promise<string | null> {
     }
 
     return user[0].password;
+}
+
+export async function updatePassword(userId: number, newHashedPassword: string): Promise<boolean> {
+    const result = await db
+        .update(users)
+        .set({ password: newHashedPassword })
+        .where(eq(users.id, userId))
+        .execute();
+    
+    return result[0].affectedRows > 0;
 }
 
 export async function getUser(email: string): Promise<User | null> {
@@ -185,4 +193,14 @@ export async function getProfilePictureByUserId(userId: number): Promise<string 
     }
 
     return attachment[0].path;
+}
+
+export async function updateName(userId: number, firstName: string, lastName: string): Promise<boolean> {
+    const result = await db
+        .update(users)
+        .set({ firstName: firstName, lastName: lastName})
+        .where(eq(users.id, userId))
+        .execute();
+
+    return result[0].affectedRows > 0;
 }

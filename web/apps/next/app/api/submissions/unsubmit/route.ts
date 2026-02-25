@@ -1,14 +1,23 @@
 import { getSubmissionById, getUserById, updateSubmissionStatus, updateSubmissionSubmittedAt } from "@studify/database";
 import { NextRequest, NextResponse } from "next/server";
 import { Course, Post, CourseMember } from "@studify/types";
+import { authConfig } from "@/app/auth";
+import { getServerSession } from "next-auth";
 
 export async function POST(req: NextRequest) {
-    const { userId, submissionId, postId } = await req.json();
-
-    const user = await getUserById(userId);
-    if(!user) {
-        return NextResponse.json({ message: "User not found" }, { status: 404 });
+    const session = await getServerSession(authConfig);
+        
+    if (!session || !session.user) {
+        return NextResponse.json(
+            { error: "Unauthorized" },
+            { status: 401 }
+        );
     }
+    
+    const { submissionId, postId } = await req.json();
+
+    const user = session.user as any;
+    const userId = user.id;
 
     const course = user.courses.find((c: Course) => c.posts.some((post: Post) => post.id === +postId));
     if(!course) {

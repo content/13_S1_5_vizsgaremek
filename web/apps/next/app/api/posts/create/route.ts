@@ -1,14 +1,22 @@
+import { authConfig } from "@/app/auth";
 import { createNewPost, getCourseById, getPostTypes } from "@studify/database";
+import { getServerSession } from "next-auth";
 import { NextRequest, NextResponse } from "next/server";
 
 export async function POST(req: NextRequest) {
-    const { userId, courseId, postTypeId, name, description, deadlineAt, pollPostOptions, attachments, maxScore } = await req.json();
-
-    if (!userId) {
-        return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    const session = await getServerSession(authConfig);
+        
+    if (!session || !session.user) {
+        return NextResponse.json(
+            { error: "Unauthorized" },
+            { status: 401 }
+        );
     }
-    
-    console.log(deadlineAt);
+
+    const { courseId, postTypeId, name, description, deadlineAt, pollPostOptions, attachments, maxScore } = await req.json();
+
+    const user = session.user as any;
+    const userId = user.id;
 
     const postTypes = await getPostTypes();
     if(!postTypes.find(pt => pt.id === postTypeId)) {
@@ -20,7 +28,7 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({ error: "Course not found" }, { status: 404 });
     }
 
-    console.log(new Date(deadlineAt));
+    // TODO: Check if user is a teacher in the course or has permissions to create a post
 
     const post = await createNewPost({
         userId: userId,

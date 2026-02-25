@@ -8,7 +8,7 @@ declare module "next-auth" {
       last_name: string;
       email: string;
       courses: Course[];
-      profile_picture: Attachment | null;
+      profile_picture: string | null;
       created_at: string;
     };
   }
@@ -18,7 +18,7 @@ declare module "next-auth" {
     first_name?: string;
     last_name?: string;
     email?: string | null;
-    profile_picture?: Attachment | null;
+    profile_picture?: string | null;
     created_at?: string | null;
   }
 }

@@ -1,11 +1,25 @@
 import { getCourseByInvitationCode, joinCourse } from "@studify/database";
 import { NextRequest, NextResponse } from "next/server";
 import { CourseMember } from "@studify/types";
+import { authConfig } from "@/app/auth";
+import { getServerSession } from "next-auth";
 
 export async function POST(req: NextRequest) {
+    const session = await getServerSession(authConfig);
+        
+    if (!session || !session.user) {
+        return NextResponse.json(
+            { error: "Unauthorized" },
+            { status: 401 }
+        );
+    }
+
     const body = await req.json();
 
-    const { userId, invitationCode } = body;
+    const { invitationCode } = body;
+
+    const user = session.user as any;
+    const userId = user.id;
 
     const course = await getCourseByInvitationCode(invitationCode);
     if (!course) {

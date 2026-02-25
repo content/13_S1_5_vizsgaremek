@@ -2,6 +2,7 @@ import { NextResponse, NextRequest } from 'next/server';
 import { validateEmail, validateName, validatePassword } from '@/lib/validators/credentials';
 import { createUser, getUser } from '@studify/database';
 import { Messages } from '@/lib/localization/messages';
+import { hash } from '@/lib/encryption/encryption';
 
 export async function POST(request: NextRequest) {
     const { email, password, firstName, lastName, profilePicture } = await request.formData().then((data) => {
@@ -30,10 +31,12 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ error: Messages.Auth_Register_WeakPassword }, { status: 400 });
     }
 
+    const hashedPassword = await hash(password);
+
     try {
         const user = await createUser(
             email,
-            password,
+            hashedPassword,
             firstName,
             lastName,
             profilePicture,
