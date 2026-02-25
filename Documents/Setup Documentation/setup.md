@@ -10,6 +10,7 @@ bun install
 cd ../..
 cd packages/database
 bun run drizzle-kit generate
+bun run drizzle-kit push
 létrehozni studify nevezetű database-t ha nincs
 bun run drizzle-kit migrate
 cd ../..
