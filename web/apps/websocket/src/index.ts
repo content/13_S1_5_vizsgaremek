@@ -2,6 +2,8 @@ import { Express } from 'express';
 import { createServer } from 'http';
 import { Server, Socket } from 'socket.io';
 import { registerSocketListeners } from './listeners';
+import jwt from "jsonwebtoken";
+import { User } from '@studify/types';
 
 export const app: Express = require('express')();
 app.use(require('cors')());
@@ -17,6 +19,22 @@ export const io = new Server(server, {
     },
 });
 
+io.use((socket, next) => {
+    const token = socket.handshake.auth?.token || socket.handshake.query?.token;
+
+    if (!token || typeof token !== "string") {
+        return next(new Error("UNAUTHORIZED"));
+    }
+
+    try {
+        const user = jwt.verify(token, process.env.NEXTAUTH_SECRET!) as User;
+        socket.data.user = user;
+        next();
+    } catch (err) {
+        next(new Error("UNAUTHORIZED"));
+    }
+});
+
 io.on('connection', (socket: Socket) => {
     console.log(`[CONNECTION]: ${socket.id} - total: ${io.engine.clientsCount}`);
 
@@ -26,5 +44,5 @@ io.on('connection', (socket: Socket) => {
 server.listen(PORT, async () => {
     console.log('[WS RUNNING]: port ---> ' + PORT);
 
-
+    
 });
