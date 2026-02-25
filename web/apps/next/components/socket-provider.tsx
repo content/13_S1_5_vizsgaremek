@@ -3,7 +3,7 @@
 import type { DefaultEventsMap } from '@socket.io/component-emitter';
 import { createContext, useContext, useEffect, useState } from 'react';
 import { Socket } from 'socket.io-client';
-import { socket } from '../socket.ts';
+import { socket } from '../socket';
 import { useNotificationProvider } from './notification-provider.jsx';
 import {  } from '@studify/types';
 import { redirect } from 'next/navigation';
