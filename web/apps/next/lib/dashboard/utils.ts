@@ -1,6 +1,6 @@
 import { Course } from "@studify/types";
 
-export async function createCourse(creatorId: number, name: string, backgroundImageUrl: string | null): Promise<Course> {
+export async function createCourse(creatorId: number, name: string, backgroundImageUrl: string | null): Promise<Course | null> {
     const response = await fetch("/api/courses/create", {
         method: "POST",
         headers: {
@@ -33,7 +33,7 @@ export async function joinCourse(userId: number, invitationCode: string): Promis
     });
 
     try {
-        return response;
+        return await response.json();
     } catch (error) {
         return null;
     }
