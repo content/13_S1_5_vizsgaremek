@@ -1,17 +1,9 @@
 import {
     Body,
-    Button,
     Container,
     Head,
-    Heading,
-    Hr,
     Html,
-    Img,
-    Link,
-    Preview,
-    Section,
-    Tailwind,
-    Text
+    Tailwind
 } from "@react-email/components";
 
 import { Course, Post } from "@studify/types";
