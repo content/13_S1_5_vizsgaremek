@@ -1,18 +1,16 @@
 "use client"
-import React from "react"
-import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { ThemeToggle } from "@/components/theme-toggle"
-import { GraduationCap } from "lucide-react"
+import Link from "next/link"
+import React from "react"
 
-import { UploadButton, UploadDropzone } from "@/components/uploadthing/uploadthing";
-import Head from "next/head"
-import { useNotificationProvider } from "@/components/notification-provider"
-import { useRouter } from "next/navigation"
 import LandingHeader from "@/components/elements/landing-header"
+import { useNotificationProvider } from "@/components/notification-provider"
+import { UploadDropzone } from "@/components/uploadthing/uploadthing"
+import Head from "next/head"
+import { useRouter } from "next/navigation"
 
 export default function RegisterPage() {
     const router = useRouter();

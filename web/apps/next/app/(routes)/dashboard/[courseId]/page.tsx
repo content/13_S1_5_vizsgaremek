@@ -7,7 +7,7 @@ import React, { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 
 import { Button } from "@/components/ui/button";
-import { Brush, ClipboardList, Home, Info, Users, UsersIcon } from "lucide-react";
+import { Brush, ClipboardList, Home, Info, Users } from "lucide-react";
 
 import { UserAvatar } from "@/components/elements/avatar";
 import NoPostsCard from "@/components/elements/posts/no-posts-card";
@@ -15,16 +15,15 @@ import NewPostDialog from "@/components/elements/posts/post-dialog";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Switch } from "@/components/ui/switch";
-import { Textarea } from "@/components/ui/textarea";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Switch } from "@/components/ui/switch";
 import { generateColorFromInvitationCode } from "@/lib/dashboard/utils";
 
 import CourseBanner from "@/components/elements/course-banner";
 import PostCard from "@/components/elements/posts/post-card";
 
-import { Post, Submission } from "@studify/database";
 import { useNotificationProvider } from "@/components/notification-provider";
+import { Post, Submission } from "@studify/types";
 
 type CourseSettingsForm = {
     name: string;

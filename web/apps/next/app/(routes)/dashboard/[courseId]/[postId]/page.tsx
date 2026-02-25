@@ -10,15 +10,13 @@ import { Card } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogFooter, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Skeleton } from "@/components/ui/skeleton";
 import { UploadDropzone } from "@/components/uploadthing/uploadthing";
-import { generateColorFromInvitationCode } from "@/lib/dashboard/utils";
-import { Course, Post, Submission, CourseMember } from "@studify/types";
-import { set } from "date-fns";
+import { Course, CourseMember, Post, Submission } from "@studify/types";
+import { formatInTimeZone } from 'date-fns-tz';
 import { Home } from "lucide-react";
 import { useSession } from "next-auth/react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import React, { useEffect } from "react";
-import { formatInTimeZone } from 'date-fns-tz';
 
 export default function PostPage({ params }: { params: Promise<{ courseId: string, postId: string }> }) {
     const { courseId, postId } = React.use(params);

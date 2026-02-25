@@ -3,7 +3,7 @@ import { Inter } from "next/font/google"
 import type React from "react"
 import "./globals.css"
 
-import NextAuthProvider from './providers/session-provider';
+import NextAuthProvider from '../components/session-provider';
 import { NotificationProvider } from "@/components/notification-provider";
 import { ThemeProvider } from "@/components/theme-provider";
 import { SocketProvider } from "@/components/socket-provider";

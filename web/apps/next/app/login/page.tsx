@@ -1,18 +1,16 @@
 "use client";
 
-import { signIn, signOut, useSession } from "next-auth/react";
-import { useNotificationProvider } from "@/components/notification-provider";
-import Head from "next/head";
-import React, { useEffect } from "react";
-import Link from "next/link"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { ThemeToggle } from "@/components/theme-toggle"
-import { GraduationCap } from "lucide-react"
-import { useRouter } from "next/navigation";
 import LandingHeader from "@/components/elements/landing-header";
+import { useNotificationProvider } from "@/components/notification-provider";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { signIn, useSession } from "next-auth/react";
+import Head from "next/head";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import React, { useEffect } from "react";
 
 export function LoginPage() {
     const router = useRouter();

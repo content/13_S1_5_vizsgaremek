@@ -5,15 +5,14 @@ import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
-import { CalendarToggle, MonthlyView, WeeklyView } from "@/components/elements/calendar/calendar";
+import { MonthlyView, WeeklyView } from "@/components/elements/calendar/calendar";
 import PostCard from "@/components/elements/posts/post-card";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { addDays, MONTHS } from "@/lib/utils";
 import { Course, Post } from "@studify/types";
-import { Calendar1, CalendarDays, ChevronLeft, Clock, Eye } from "lucide-react";
-import { Card, CardContent } from "@/components/ui/card";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { Button } from "@/components/ui/button";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { Calendar1, CalendarDays, ChevronLeft, Clock } from "lucide-react";
 
 
 type PostWithCourse = Post & { course: Course };

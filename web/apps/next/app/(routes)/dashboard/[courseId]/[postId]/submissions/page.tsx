@@ -4,15 +4,15 @@ import { useNotificationProvider } from "@/components/notification-provider";
 import { useSession } from "next-auth/react";
 import React, { useEffect } from "react";
 
-import { Course, Submission, Post, CourseMember } from "@studify/types";
-import { useRouter } from "next/navigation";
 import CourseBanner from "@/components/elements/course-banner";
-import { Skeleton } from "@/components/ui/skeleton";
-import { Home, Notebook } from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import Link from "next/link";
-import { Button } from "@/components/ui/button";
 import SubmissionCard from "@/components/elements/submissions/submission-card";
+import { Button } from "@/components/ui/button";
+import { Card, CardHeader, CardTitle } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Course, CourseMember, Post, Submission } from "@studify/types";
+import { Home, Notebook } from "lucide-react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
 
 export default function SubmissionsPage({ params }: { params: Promise<{ courseId: string, postId: string }> }) {
     const { courseId, postId } = React.use(params);
