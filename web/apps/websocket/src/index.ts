@@ -38,11 +38,5 @@ io.use((socket, next) => {
 io.on('connection', (socket: Socket) => {
     console.log(`[CONNECTION]: ${socket.id} - total: ${io.engine.clientsCount}`);
 
-    registerSocketListeners(socket);    
-});
-
-server.listen(PORT, async () => {
-    console.log('[WS RUNNING]: port ---> ' + PORT);
-
-    
+    registerSocketListeners(socket);
 });
