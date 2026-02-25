@@ -1,27 +1,22 @@
 "use client";
 
-import { ThemeToggle } from "@/components/theme-toggle";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Course } from "@studify/types";
-import { BookOpen, Calendar, FolderOpen, GraduationCap, Home, Menu, MoreVertical, Plus, Settings, Users, X } from "lucide-react";
+import { BookOpen, Users } from "lucide-react";
 
-import Link from import { useSession } from "next-auth/react";"next/link";
+import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
+"next/link";
 
 import CourseCard from "@/components/elements/course-card";
 
-import { createCourse, joinCourse } from "@/lib/dashboard/courseFuntions";
 import { useNotificationProvider } from "@/components/notification-provider";
 import { UploadDropzone } from "@/components/uploadthing/uploadthing";
-import { set } from "date-fns";
-import { title } from "process";
+import { createCourse, joinCourse } from "@/lib/dashboard/utils";
 
 export default function DashboardPage() {
     const router = useRouter();
