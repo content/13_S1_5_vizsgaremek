@@ -10,14 +10,14 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Course } from "@studify/types";
 import { BookOpen, Calendar, FolderOpen, GraduationCap, Home, Menu, MoreVertical, Plus, Settings, Users, X } from "lucide-react";
-import { useSession } from "next-auth/react";
-import Link from "next/link";
+
+import Link from import { useSession } from "next-auth/react";"next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
 import CourseCard from "@/components/elements/course-card";
 
-import { createCourse, joinCourse } from "@/lib/dashboard/utils";
+import { createCourse, joinCourse } from "@/lib/dashboard/courseFuntions";
 import { useNotificationProvider } from "@/components/notification-provider";
 import { UploadDropzone } from "@/components/uploadthing/uploadthing";
 import { set } from "date-fns";
@@ -39,6 +39,10 @@ export default function DashboardPage() {
     const [isNewCourseCreateBtnDisabled, setIsNewCourseCreateBtnDisabled] = useState(false);
 
     const [invitationCode, setInvitationCode] = useState("");
+
+    useEffect(() => {
+        document.title = "Dashboard - Studify";
+    }, [])
 
     useEffect(() => {
         if(status === "loading") return;
@@ -73,34 +77,25 @@ export default function DashboardPage() {
     const handleJoinCourse = async () => {
         if(!session || !session.user) return;
 
-        const response = await joinCourse(session.user.id, invitationCode);
+        const joinedCourse = await joinCourse(session.user.id, invitationCode);
 
-        switch(response.status) {
-            case 500:
+        switch(joinedCourse) {
+            case null:
                 console.error("Failed to join course");
                 notify("Hiba történt a kurzushoz való csatlakozáskor.", { type: "error" });
-                setJoinDialogOpen(false);
-                return;
-            case 400:
-                notify("Már kérelmezted a csatlakozást ehhez a kurzushoz!", { type: "error" });
-                setJoinDialogOpen(false);
                 return;
             default:
-                notify("Sikeresen kérelmezted a csatlakozást a kurzushoz!", { type: "success" });
-                setJoinDialogOpen(false);
+                notify("Sikeresen csatlakoztál a kurzushoz!", { type: "success" });
                 break;
         }
 
+        setCourses([...courses, joinedCourse]);
         setJoinDialogOpen(false);
     }
 
-    useEffect(() => {
-        console.log(courses);
-    }, [courses])
-
     return (
         isLoading ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 pe-36">
+            <div>
                 <p>Betöltés...</p>
             </div>
         ) : (
@@ -227,7 +222,7 @@ export default function DashboardPage() {
             <div>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 pe-36">
                     {courses.map((course) => (
-                        <CourseCard key={`COURSE_CARD_${course.id}`} course={course} />
+                        <CourseCard key={course.id} course={course} />
                     ))}
                 </div>
             </div>

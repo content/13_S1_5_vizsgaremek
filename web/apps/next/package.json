@@ -9,6 +9,8 @@
     "start": "next start"
   },
   "dependencies": {
+    "@studify/database": "workspace:^",
+    "@studify/types": "workspace:^",
     "@hookform/resolvers": "^3.9.1",
     "@node-rs/bcrypt": "^1.10.7",
     "@radix-ui/react-accordion": "1.2.2",
