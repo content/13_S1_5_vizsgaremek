@@ -153,7 +153,6 @@ export default function CoursePage({ params }: { params: Promise<{ courseId: str
     useEffect(() => {
         if(!session || !session.user || !course) return;
 
-        // Overwrite the session course data with the new data
         const updatedCourses = session.user.courses.map((c: Course) => {
             if(c.id === course.id) {
                 return course;
