@@ -13,6 +13,7 @@ export interface Course {
     name: string;
     invitationCode: string;
     backgroundImage: Attachment | null;
+    color: string;
 
     members: CourseMember[];
     posts: Post[];

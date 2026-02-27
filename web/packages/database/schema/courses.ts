@@ -7,6 +7,7 @@ export const courses = mysqlTable('courses', {
     id: int('id').autoincrement().primaryKey().$type<number>(),
     name: varchar('name', { length: 255 }).notNull(),
     invitationCode: varchar('invitation_code', { length: 9 }).notNull().unique(),
+    color: varchar('color', { length: 7 }).notNull().default('#000000')
 });
 
 export const coursesMembers = mysqlTable('courses_members', {

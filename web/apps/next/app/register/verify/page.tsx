@@ -6,7 +6,8 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { UploadDropzone } from "@/components/uploadthing/uploadthing";
+import ImageUploadButton from "@/components/elements/attachments/image-upload-button";
+import { genUploader } from "uploadthing/client";
 import { verifyEmailToken } from "@/lib/encryption/encryption";
 import { useSession } from "next-auth/react";
 import { redirect, useSearchParams } from "next/navigation";
@@ -29,6 +30,54 @@ export default function RegisterVerifiedEmailPage() {
 
     const [profilePicture, setProfilePicture] = React.useState<{path: string | null, name: string | null}>({path: null, name: null})
 
+    React.useEffect(() => {
+        if (profilePicture.path) {
+            setIsRegisterBtnDisabled(false);
+        }
+    }, [profilePicture.path]);
+
+    const [pendingUpload, setPendingUpload] = React.useState<File | null>(null);
+
+    React.useEffect(() => {
+        if (!pendingUpload) return;
+
+        let cancelled = false;
+
+        const doUpload = async () => {
+            setIsRegisterBtnDisabled(true);
+            try {
+                const { uploadFiles } = genUploader({ fetch: window.fetch });
+                const res = await uploadFiles("imageUploader", { files: [pendingUpload] });
+                const fileInfo = Array.isArray(res) ? res[0] : res?.[0] ?? res;
+                const url = fileInfo?.ufsUrl ?? fileInfo?.url ?? null;
+                const name = fileInfo?.name ?? pendingUpload.name;
+                if (!cancelled) {
+                    if (url) {
+                        notify("Sikeres feltöltés!", { type: "success", description: "A profilképed sikeresen feltöltve." });
+                        setProfilePicture({ path: url, name });
+                    } else {
+                        notify("Hiba a kép feltöltése során!", { type: "error", description: "Próbáld újra később!" });
+                    }
+                }
+            } catch (err) {
+                console.error("Uploadthing upload error:", err);
+                if (!cancelled) notify("Hiba a kép feltöltése során!", { type: "error", description: "Próbáld újra később!" });
+            } finally {
+                if (!cancelled) {
+                    setPendingUpload(null);
+                    setIsRegisterBtnDisabled(false);
+                }
+            }
+        };
+
+        doUpload();
+
+        return () => {
+            cancelled = true;
+        };
+    }, [pendingUpload]);
+
+    const [isContinueButtonDisabled, setIsContinueButtonDisabled] = React.useState(true);
     const [isRegisterBtnDisabled, setIsRegisterBtnDisabled] = React.useState(false)
 
     const registerUser = async (event: React.FormEvent<HTMLFormElement>) => {
@@ -80,6 +129,10 @@ export default function RegisterVerifiedEmailPage() {
     }, [searchParams]);
 
     useEffect(() => {
+        setIsContinueButtonDisabled(!password || password !== confirmationPassword);
+    }, [password, confirmationPassword]);
+
+    useEffect(() => {
         const solveToken = async () => {
             const solvedToken = await verifyEmailToken(token || "");
             setSolvedToken(solvedToken);
@@ -126,11 +179,11 @@ export default function RegisterVerifiedEmailPage() {
                                 <>
                                     <div className="space-y-2">
                                         <Label htmlFor="password">Jelszó</Label>
-                                        <Input id="password" type="password" placeholder="••••••••" className="bg-background" required onChange={(e) => setPassword(e.target.value)} />
+                                        <Input id="password" type="password" placeholder="••••••••" value={password} className="bg-background" required onChange={(e) => setPassword(e.target.value)} />
                                     </div>
                                     <div className="space-y-2">
                                         <Label htmlFor="confirmPassword">Jelszó megerősítése</Label>
-                                        <Input id="confirmPassword" type="password" placeholder="••••••••" className="bg-background" required onChange={(e) => setConfirmationPassword(e.target.value)}/>
+                                        <Input id="confirmPassword" type="password" placeholder="••••••••" value={confirmationPassword} className="bg-background" required onChange={(e) => setConfirmationPassword(e.target.value)}/>
                                     </div>
                                     <Button disabled={!password || password !== confirmationPassword} className="bg-green-500 hover:bg-green-600 w-full" onClick={() => setShownTab("profile_picture")}>
                                         Tovább
@@ -142,36 +195,20 @@ export default function RegisterVerifiedEmailPage() {
                                 <>
                                     <div className="space-y-2">
                                         <Label htmlFor="">Profilkép feltöltése</Label>
-                                        <UploadDropzone
-                                            className="border-border bg-background hover:bg-accent/50 transition-colors"
-                                            endpoint="imageUploader"
-                                            onClientUploadComplete={(res) => {
-                                                const url = res[0]?.ufsUrl;
-                                                const name = res[0]?.name;
-                                                if(url) {
-                                                    notify("Sikeres feltöltés!", { type: "success", description: "A profilképed sikeresen feltöltve." });
-                                                    setProfilePicture({path: res[0]?.ufsUrl || null, name: res[0]?.name || null});
-                                                }
-
-                                                setIsRegisterBtnDisabled(false);
-                                            }}
-
-                                            config={
-                                                {
-                                                    mode: "auto"
-                                                }
-                                            }
-
-                                            onUploadProgress={(progress) => {
-                                                setIsRegisterBtnDisabled(progress < 100);
-                                            }}
-
-                                            onUploadError={(error: Error) => {
-                                                notify("Hiba a kép feltöltése során!", { type: "error", description: "Próbáld újra később!" });
-                                                setIsRegisterBtnDisabled(false);
-                                            }}
-                                        />
-                                    </div>
+                                        <div className="w-full flex items-center justify-center gap-4">
+                                            <ImageUploadButton
+                                                className="border-border bg-background hover:bg-accent/50 transition-colors h-32 w-32"
+                                                imageClassName=""
+                                                croppable={true}
+                                                aspectRatio={1}
+                                                onUpload={(file: File) => {
+                                                    setPendingUpload(file);
+                                                    setIsRegisterBtnDisabled(true);
+                                                }}
+                                                defaultImage={profilePicture.path || null}
+                                            />
+                                        </div>
+                                 </div>
                                     <div className="flex justify-between">
                                         <Button 
                                             variant={"outline"}

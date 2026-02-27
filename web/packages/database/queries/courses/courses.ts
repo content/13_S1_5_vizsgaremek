@@ -1,11 +1,11 @@
-import { eq, and } from 'drizzle-orm';
-import { db } from "../../mysql";
 import { Attachment, Course, CourseMember } from "@studify/types";
+import { generateColorFromInvitationCode, getContrastColor } from '../../../../apps/next/lib/dashboard/utils';
+import { and, eq } from 'drizzle-orm';
+import { db } from "../../mysql";
 import { backgroundAttachments, courses, coursesMembers } from '../../schema/courses';
 import { getCourseBackgroundImage } from '../attachments/attachments';
 import { getPostsByCourseId, getPostsByCourseIdandUserId } from '../posts/posts';
-import { MySqlRawQueryResult } from 'drizzle-orm/mysql2';
-import { getUserById, getUserByIdWithoutCourses } from '../users/users';
+import { getUserByIdWithoutCourses } from '../users/users';
 
 async function generateInvitationCode(): Promise<string> {
     const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
@@ -167,6 +167,7 @@ export async function getCourseById(courseId: number): Promise<Course | null> {
         return null;
     }
 
+    const color = course.color || (await getContrastColor((await getCourseBackgroundImage(course.id))?.path || '')) || generateColorFromInvitationCode(course.invitationCode);
     const backgroundImage = await getCourseBackgroundImage(course.id);
     const members = await getCourseMembers(course.id);
     const posts = await getPostsByCourseId(course.id);
@@ -177,11 +178,12 @@ export async function getCourseById(courseId: number): Promise<Course | null> {
         invitationCode: course.invitationCode,
         backgroundImage: backgroundImage,
         members: members,
+        color: color,
         posts: posts,
     } as unknown as Course;
 }
 
-export async function setBackgroundImageForCourse(courseId: number, attachment: Attachment): Promise<MySqlRawQueryResult> {
+export async function setBackgroundImageForCourse(courseId: number, attachment: Attachment): Promise<Boolean> {
     const result = await db
         .insert(backgroundAttachments)
         .values({
@@ -190,16 +192,19 @@ export async function setBackgroundImageForCourse(courseId: number, attachment: 
         })
         .execute();
 
-    return result[0];
+    return result[0].affectedRows > 0;
 }
 
 export async function createCourse(creatorId: number, name: string, backgroundImage: Attachment | null): Promise<Course> {
     const invitationCode = await generateInvitationCode();
+    const color = backgroundImage ? await getContrastColor(backgroundImage.path) : generateColorFromInvitationCode(invitationCode);
+    
     const result = await db
         .insert(courses)
         .values({
             name: name,
             invitationCode: invitationCode,
+            color: color
         })
         .execute();
 
