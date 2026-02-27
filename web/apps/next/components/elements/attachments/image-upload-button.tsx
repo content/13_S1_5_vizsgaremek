@@ -8,6 +8,7 @@ import { ImageCropper } from './image-cropper';
 
 interface BaseProps {
     className?: string;
+    imageClassName?: string;
     onUpload: (file: File) => void;
     defaultImage?: string | null;
 }
@@ -16,7 +17,7 @@ export type ImageUploadButtonProps =
     | (BaseProps & { croppable?: false; aspectRatio?: never })
     | (BaseProps & { croppable: true; aspectRatio: number });
 
-export default function BannerUploadButton({ className, onUpload, defaultImage, croppable = true, aspectRatio }: ImageUploadButtonProps) {
+export default function BannerUploadButton({ className, imageClassName="size-24 rounded-full sm:size-32", onUpload, defaultImage, croppable = true, aspectRatio }: ImageUploadButtonProps) {
     if (croppable && typeof aspectRatio !== 'number') {
         throw new Error('image-upload-button: aspectRatio is required when croppable is true');
     }
@@ -127,7 +128,7 @@ export default function BannerUploadButton({ className, onUpload, defaultImage, 
         <div className={cn('', className)}>
             <div className='relative flex flex-col items-center gap-2 align-top'>
                 <div
-                    className='relative flex size-24 shrink-0 items-center justify-center overflow-hidden rounded-full border border-gray-500/30 bg-white/50 backdrop-blur-3xl dark:border-input dark:bg-black/30 dark:backdrop-blur-sm sm:size-32'
+                    className={cn('relative flex shrink-0 items-center justify-center overflow-hidden border border-gray-500/30 bg-white/50 backdrop-blur-3xl dark:border-input dark:bg-black/30 dark:backdrop-blur-sm', imageClassName)}
                     aria-label={previewUrl ? 'Előnézet' : 'Alapértelmezett kép'}
                 >
                     {previewUrl ? (

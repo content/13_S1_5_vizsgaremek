@@ -198,6 +198,7 @@ export default function RegisterVerifiedEmailPage() {
                                         <div className="w-full flex items-center justify-center gap-4">
                                             <ImageUploadButton
                                                 className="border-border bg-background hover:bg-accent/50 transition-colors h-32 w-32"
+                                                imageClassName=""
                                                 croppable={true}
                                                 aspectRatio={1}
                                                 onUpload={(file: File) => {
