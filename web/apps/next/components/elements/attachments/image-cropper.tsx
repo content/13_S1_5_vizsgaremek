@@ -65,7 +65,7 @@ export function ImageCropper({
   onCropComplete,
   outputFormat = "image/png",
   outputQuality = 0.92,
-}: ImageCropperProp s) {
+}: ImageCropperProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const imageRef = useRef<HTMLImageElement | null>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
