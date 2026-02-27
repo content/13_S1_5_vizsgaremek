@@ -9,7 +9,7 @@ import { ImageCropper } from './image-cropper';
 interface BaseProps {
     className?: string;
     onUpload: (file: File) => void;
-    defaultImage?: string;
+    defaultImage?: string | null;
 }
 
 export type ImageUploadButtonProps =
@@ -24,6 +24,7 @@ export default function BannerUploadButton({ className, onUpload, defaultImage, 
     const previewRef = useRef<string | null>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
     const tempFileRef = useRef<File | null>(null);
+
     const [fileName, setFileName] = useState<string | null>(null);
     const [previewUrl, setPreviewUrl] = useState<string | null>(defaultImage || null);
     const [cropperOpen, setCropperOpen] = useState(false);
@@ -40,7 +41,6 @@ export default function BannerUploadButton({ className, onUpload, defaultImage, 
                 setFileName(file.name);
 
                 if (croppable) {
-                    // open cropper with object URL, wait for crop
                     tempFileRef.current = file;
                     const url = URL.createObjectURL(file);
                     setPreviewUrl(url);
@@ -65,55 +65,52 @@ export default function BannerUploadButton({ className, onUpload, defaultImage, 
         }
         setFileName(null);
         setPreviewUrl(null);
+
         previewRef.current = null;
         tempFileRef.current = null;
+        
         if (fileInputRef.current) {
             fileInputRef.current.value = '';
         }
     }, [previewUrl]);
 
-    // called when cropper open state changes (handles cancel case)
     const handleCropperOpenChange = useCallback((open: boolean) => {
         setCropperOpen(open);
         if (!open && tempFileRef.current) {
-            // cropper was closed without completing crop -> clean up
             if (previewRef.current) {
                 try { URL.revokeObjectURL(previewRef.current); } catch {}
             }
+
             previewRef.current = null;
+
             setPreviewUrl(defaultImage || null);
             setFileName(null);
+
             if (fileInputRef.current) fileInputRef.current.value = '';
+
             tempFileRef.current = null;
         }
     }, [defaultImage]);
 
-    // invoked when cropper returns a data URI
     const handleCropComplete = useCallback(async (dataUri: string) => {
         try {
-            // convert data URI to Blob, then File
             const res = await fetch(dataUri);
             const blob = await res.blob();
             const name = tempFileRef.current?.name || 'image.png';
             const file = new File([blob], name, { type: blob.type });
 
-            // cleanup previous object URL
             if (previewRef.current) {
                 try { URL.revokeObjectURL(previewRef.current); } catch {}
                 previewRef.current = null;
             }
 
-            // update preview to cropped data uri (can be used directly by <Image>)
             setPreviewUrl(dataUri);
             setFileName(file.name);
 
-            // clear temp
             tempFileRef.current = null;
 
-            // call the provided callback
             onUpload(file);
         } catch (e) {
-            // swallow errors; caller can handle
             console.error('Failed to finalize cropped image', e);
         }
     }, [onUpload]);
@@ -147,7 +144,7 @@ export default function BannerUploadButton({ className, onUpload, defaultImage, 
                         </div>
                     )}
                 </div>
-                <div className='group absolute top-0 size-full rounded-full'>
+                <div className='group absolute top-0 size-full rounded-full overflow-hidden'>
                     <Button
                         type='button'
                         onClick={handleButtonClick}

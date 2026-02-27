@@ -77,6 +77,7 @@ export default function RegisterVerifiedEmailPage() {
         };
     }, [pendingUpload]);
 
+    const [isContinueButtonDisabled, setIsContinueButtonDisabled] = React.useState(true);
     const [isRegisterBtnDisabled, setIsRegisterBtnDisabled] = React.useState(false)
 
     const registerUser = async (event: React.FormEvent<HTMLFormElement>) => {
@@ -128,6 +129,10 @@ export default function RegisterVerifiedEmailPage() {
     }, [searchParams]);
 
     useEffect(() => {
+        setIsContinueButtonDisabled(!password || password !== confirmationPassword);
+    }, [password, confirmationPassword]);
+
+    useEffect(() => {
         const solveToken = async () => {
             const solvedToken = await verifyEmailToken(token || "");
             setSolvedToken(solvedToken);
@@ -174,11 +179,11 @@ export default function RegisterVerifiedEmailPage() {
                                 <>
                                     <div className="space-y-2">
                                         <Label htmlFor="password">Jelszó</Label>
-                                        <Input id="password" type="password" placeholder="••••••••" className="bg-background" required onChange={(e) => setPassword(e.target.value)} />
+                                        <Input id="password" type="password" placeholder="••••••••" value={password} className="bg-background" required onChange={(e) => setPassword(e.target.value)} />
                                     </div>
                                     <div className="space-y-2">
                                         <Label htmlFor="confirmPassword">Jelszó megerősítése</Label>
-                                        <Input id="confirmPassword" type="password" placeholder="••••••••" className="bg-background" required onChange={(e) => setConfirmationPassword(e.target.value)}/>
+                                        <Input id="confirmPassword" type="password" placeholder="••••••••" value={confirmationPassword} className="bg-background" required onChange={(e) => setConfirmationPassword(e.target.value)}/>
                                     </div>
                                     <Button disabled={!password || password !== confirmationPassword} className="bg-green-500 hover:bg-green-600 w-full" onClick={() => setShownTab("profile_picture")}>
                                         Tovább
@@ -190,17 +195,18 @@ export default function RegisterVerifiedEmailPage() {
                                 <>
                                     <div className="space-y-2">
                                         <Label htmlFor="">Profilkép feltöltése</Label>
-                                        <ImageUploadButton
-                                            className="border-border bg-background hover:bg-accent/50 transition-colors"
-                                            croppable={true}
-                                            aspectRatio={1}
-                                            onUpload={(file: File) => {
-                                                setPendingUpload(file);
-                                                setIsRegisterBtnDisabled(true);
-                                            }}
-                                        />
-
-                                        {/* Upload is handled programmatically via Uploadthing client when pendingUpload is set */}
+                                        <div className="w-full flex items-center justify-center gap-4">
+                                            <ImageUploadButton
+                                                className="border-border bg-background hover:bg-accent/50 transition-colors h-32 w-32"
+                                                croppable={true}
+                                                aspectRatio={1}
+                                                onUpload={(file: File) => {
+                                                    setPendingUpload(file);
+                                                    setIsRegisterBtnDisabled(true);
+                                                }}
+                                                defaultImage={profilePicture.path || null}
+                                            />
+                                        </div>
                                  </div>
                                     <div className="flex justify-between">
                                         <Button 

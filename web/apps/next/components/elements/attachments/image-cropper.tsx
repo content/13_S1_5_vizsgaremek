@@ -583,30 +583,8 @@ export function ImageCropper({
             </span>
           </div>
 
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              {locked && aspectRatio && (
-                <div className="flex items-center gap-1.5 rounded-md bg-primary/10 px-2.5 py-1 text-xs font-medium text-primary">
-                  <Maximize2 className="h-3 w-3" />
-                  {aspectRatio === 1
-                    ? "1:1"
-                    : aspectRatio === 16 / 9
-                      ? "16:9"
-                      : aspectRatio === 4 / 3
-                        ? "4:3"
-                        : `${aspectRatio.toFixed(2)}`}
-                </div>
-              )}
-              {!locked && (
-                <span className="text-xs text-muted-foreground">
-                  Szabadon méretezhető vágókeret
-                </span>
-              )}
-              <div className="flex items-center gap-1.5 rounded-md bg-muted px-2.5 py-1 text-xs text-muted-foreground">
-                <Move className="h-3 w-3" />
-                Húzd a képet a mozgatáshoz
-              </div>
-            </div>
+          <div className="flex items-center justify-end">
+
             <Button
               type="button"
               variant="ghost"
