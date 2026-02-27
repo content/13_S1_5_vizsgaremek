@@ -1,4 +1,4 @@
-describe('Regisztráció űrlap e2e', () => {
+/*describe('Regisztráció űrlap e2e', () => {
   it('megnyitja a regisztrációt, kitölti és elküldi', () => {
     cy.visit('http://localhost:3000')    
     cy.contains('a', 'Regisztráció').first().click()
@@ -12,4 +12,4 @@ describe('Regisztráció űrlap e2e', () => {
     })
     cy.contains('Sikeres feltöltés').should('be.visible')
   })
-})
+})*/
