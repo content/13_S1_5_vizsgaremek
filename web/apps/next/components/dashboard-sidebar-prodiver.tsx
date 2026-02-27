@@ -15,6 +15,8 @@ import { createCourse, joinCourse } from "@/lib/dashboard/utils";
 import { useNotificationProvider } from "./notification-provider";
 import { UploadDropzone } from "./uploadthing/uploadthing";
 import { useRouter } from "next/navigation";
+import BannerUploadButton from "./elements/attachments/image-upload-button";
+import { genUploader } from "uploadthing/client";
 
 export function DashboardSidebar({ children }: { children: React.ReactNode }) {
     const { notify } = useNotificationProvider();
@@ -64,23 +66,45 @@ export function DashboardSidebar({ children }: { children: React.ReactNode }) {
 
         const response = await joinCourse(session.user.id, invitationCode);
 
-        switch(response.status) {
-            case 500:
-                console.error("Failed to join course");
-                notify("Hiba történt a kurzushoz való csatlakozáskor.", { type: "error" });
-                setJoinDialogOpen(false);
-                return;
-            case 400:
-                notify("Már kérelmezted a csatlakozást ehhez a kurzushoz!", { type: "error" });
-                setJoinDialogOpen(false);
-                return;
-            default:
-                notify("Sikeresen kérelmezted a csatlakozást a kurzushoz!", { type: "success" });
-                setJoinDialogOpen(false);
-                break;
+        if (response === null) {
+            console.error("Failed to join course");
+            notify("Hiba történt a kurzushoz való csatlakozáskor.", { type: "error" });
+            setJoinDialogOpen(false);
+            return;
         }
 
+        // joinCourse returns either a Course (on success) or a JSON-like message object for "request sent"
+        if (typeof response === 'object' && 'message' in (response as any)) {
+            notify("Sikeresen kérelmezted a csatlakozást a kurzushoz!", { type: "success" });
+            setJoinDialogOpen(false);
+            return;
+        }
+
+        // Otherwise assume a Course object was returned
+        notify("Sikeresen csatlakoztál a kurzushoz!", { type: "success" });
         setJoinDialogOpen(false);
+    }
+
+    // Upload banner image programmatically using Uploadthing client
+    const handleBannerUpload = async (file: File) => {
+        setIsNewCourseCreateBtnDisabled(true);
+        try {
+            const { uploadFiles } = genUploader({ fetch: window.fetch });
+            const res = await uploadFiles("imageUploader", { files: [file] });
+            const fileInfo = Array.isArray(res) ? res[0] : res?.[0] ?? res;
+            const url = fileInfo?.ufsUrl ?? fileInfo?.url ?? null;
+            if (url) {
+                notify("Sikeres feltöltés!", { type: "success", description: "A háttérkép sikeresen feltöltve." });
+                setNewCourseBackgroundImageUrl(url);
+            } else {
+                notify("Hiba a kép feltöltése során!", { type: "error", description: "Próbáld újra később!" });
+            }
+        } catch (err) {
+            console.error("Banner upload error:", err);
+            notify("Hiba a kép feltöltése során!", { type: "error", description: "Próbáld újra később!" });
+        } finally {
+            setIsNewCourseCreateBtnDisabled(false);
+        }
     }
 
     useEffect(() => {
@@ -238,29 +262,13 @@ export function DashboardSidebar({ children }: { children: React.ReactNode }) {
                                 </div>
                                 <div className="space-y-2">
                                     <Label htmlFor="course-background-image-url">Kurzus háttérképe</Label>
-                                        <UploadDropzone
-                                            className="border-border bg-background hover:bg-accent/50 transition-colors"
-                                            endpoint="imageUploader"
-                                            onClientUploadComplete={(res) => {
-                                                const url = res[0]?.ufsUrl;
-                                                if(url) {
-                                                    notify("Sikeres feltöltés!", { type: "success", description: "A háttérkép sikeresen feltöltve." });
-                                                    setNewCourseBackgroundImageUrl(res[0]?.ufsUrl);
-                                                }
-                    
-                                                setIsNewCourseCreateBtnDisabled(false);
-                                            }}
-                    
-                                            onUploadProgress={(progress) => {
-                                                setIsNewCourseCreateBtnDisabled(progress < 100);
-                                            }}
-                    
-                                            onUploadError={(error: Error) => {
-                                                notify("Hiba a kép feltöltése során!", { type: "error", description: "Próbáld újra később!" });
-                                                setIsNewCourseCreateBtnDisabled(false);
-                                            }}
-                                        />
-                                    
+                                    <BannerUploadButton
+                                        className="border-border bg-background hover:bg-accent/50 transition-colors h-32 w-full rounded-md border-dashed"
+                                        croppable={true}
+                                        aspectRatio={16 / 9}
+                                        onUpload={(file: File) => void handleBannerUpload(file)}
+                                        defaultImage={newCourseBackgroundImageUrl || null}
+                                    />
                                 </div>
                             </div>
                             <DialogFooter>
@@ -268,7 +276,7 @@ export function DashboardSidebar({ children }: { children: React.ReactNode }) {
                                     Mégse
                                 </Button>
                                 <Button disabled={isNewCourseCreateBtnDisabled} onClick={() => handleCreateCourse()}>
-                                        Kurzus létrehozása
+                                    Kurzus létrehozása
                                 </Button>
                             </DialogFooter>
                         </DialogContent>
