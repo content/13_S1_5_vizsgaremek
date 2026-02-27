@@ -11,7 +11,6 @@ import {
 } from "@/components/ui/dialog";
 import { Slider } from "@/components/ui/slider";
 import { Maximize2, Move, RotateCcw, ZoomIn, ZoomOut } from "lucide-react";
-import * as React from "react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 interface CropArea {
