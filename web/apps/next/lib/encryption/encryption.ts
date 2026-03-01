@@ -25,10 +25,10 @@ type generateHashOptions = {
     validForMs: number;
 }
 
-export const generateVerificationToken = async (email: string): Promise<string> => {
+export const generateVerificationToken = async (email: string, expiresAt: string = "24h"): Promise<string> => {
     const token = await new SignJWT({ email })
         .setProtectedHeader({ alg: 'HS256' })
-        .setExpirationTime('24h')
+        .setExpirationTime(expiresAt)
         .setIssuedAt()
         .sign(secret);
     return token;
