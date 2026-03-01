@@ -12,6 +12,7 @@ import { verifyEmailToken } from "@/lib/encryption/encryption";
 import { useSession } from "next-auth/react";
 import { redirect, useSearchParams } from "next/navigation";
 import React, { useEffect } from "react";
+import ProfilePictureUploadButton from "@/components/elements/attachments/profile-picture-upload-button";
 
 export default function RegisterVerifiedEmailPage() {
     const searchParams = useSearchParams();
@@ -51,6 +52,7 @@ export default function RegisterVerifiedEmailPage() {
                 const fileInfo = Array.isArray(res) ? res[0] : res?.[0] ?? res;
                 const url = fileInfo?.ufsUrl ?? fileInfo?.url ?? null;
                 const name = fileInfo?.name ?? pendingUpload.name;
+                
                 if (!cancelled) {
                     if (url) {
                         notify("Sikeres feltöltés!", { type: "success", description: "A profilképed sikeresen feltöltve." });
@@ -196,16 +198,13 @@ export default function RegisterVerifiedEmailPage() {
                                     <div className="space-y-2">
                                         <Label htmlFor="">Profilkép feltöltése</Label>
                                         <div className="w-full flex items-center justify-center gap-4">
-                                            <ImageUploadButton
-                                                className="border-border bg-background hover:bg-accent/50 transition-colors h-32 w-32"
-                                                imageClassName=""
-                                                croppable={true}
-                                                aspectRatio={1}
+                                            <ProfilePictureUploadButton
+                                                className="border-border bg-background hover:bg-accent/50 transition-colors size-32"
                                                 onUpload={(file: File) => {
                                                     setPendingUpload(file);
                                                     setIsRegisterBtnDisabled(true);
                                                 }}
-                                                defaultImage={profilePicture.path || null}
+                                                defaultImage={profilePicture.path || undefined}
                                             />
                                         </div>
                                  </div>

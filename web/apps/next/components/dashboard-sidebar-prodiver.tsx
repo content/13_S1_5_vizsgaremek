@@ -15,8 +15,10 @@ import { createCourse, joinCourse } from "@/lib/dashboard/utils";
 import { useNotificationProvider } from "./notification-provider";
 import { UploadDropzone } from "./uploadthing/uploadthing";
 import { useRouter } from "next/navigation";
-import BannerUploadButton from "./elements/attachments/image-upload-button";
+import ImageUploadButton from "./elements/attachments/image-upload-button";
 import { genUploader } from "uploadthing/client";
+import BannerUploadButton from "./elements/attachments/banner-upload-button";
+import CreateNewCourseDialog from "./elements/dashboard/createNewCourseDialog";
 
 export function DashboardSidebar({ children }: { children: React.ReactNode }) {
     const { notify } = useNotificationProvider();
@@ -247,40 +249,16 @@ export function DashboardSidebar({ children }: { children: React.ReactNode }) {
 
                 {/* Page Content */}
                 <main className="flex-1 p-6">
-                    <Dialog open={createDialogOpen} onOpenChange={setCreateDialogOpen}>
-                        <DialogContent>
-                            <DialogHeader>
-                                <DialogTitle>Kurzus létrehozása</DialogTitle>
-                                <DialogDescription>
-                                    Töltsd ki az adatokat egy új kurzus létrehozásához. Később meghívhatod a diákokat.
-                                </DialogDescription>
-                            </DialogHeader>
-                            <div className="space-y-4 py-4">
-                                <div className="space-y-2">
-                                    <Label htmlFor="course-name">Kurzus neve</Label>
-                                    <Input id="course-name" placeholder="Matematika" onChange={(e) => setNewCourseName(e.target.value)} />
-                                </div>
-                                <div className="space-y-2">
-                                    <Label htmlFor="course-background-image-url">Kurzus háttérképe</Label>
-                                    <BannerUploadButton
-                                        className="border-border bg-background hover:bg-accent/50 transition-colors h-32 w-full rounded-md border-dashed"
-                                        croppable={true}
-                                        aspectRatio={16 / 9}
-                                        onUpload={(file: File) => void handleBannerUpload(file)}
-                                        defaultImage={newCourseBackgroundImageUrl || null}
-                                    />
-                                </div>
-                            </div>
-                            <DialogFooter>
-                                <Button variant="outline" onClick={() => setCreateDialogOpen(false)}>
-                                    Mégse
-                                </Button>
-                                <Button disabled={isNewCourseCreateBtnDisabled} onClick={() => handleCreateCourse()}>
-                                    Kurzus létrehozása
-                                </Button>
-                            </DialogFooter>
-                        </DialogContent>
-                    </Dialog>
+                    <CreateNewCourseDialog
+                        createDialogOpen={createDialogOpen}
+                        setCreateDialogOpen={setCreateDialogOpen}
+                        newCourseName={newCourseName}
+                        setNewCourseName={setNewCourseName}
+                        newCourseBackgroundImageUrl={newCourseBackgroundImageUrl}
+                        handleBannerUpload={handleBannerUpload}
+                        isNewCourseCreateBtnDisabled={isNewCourseCreateBtnDisabled}
+                        handleCreateCourse={handleCreateCourse}
+                    />
                     <Dialog open={joinDialogOpen} onOpenChange={setJoinDialogOpen}>
                         <DialogContent>
                             <DialogHeader>

@@ -39,6 +39,8 @@ import {
 import { useSession } from "next-auth/react"
 import { useNotificationProvider } from "@/components/notification-provider"
 import { redirect } from "next/navigation"
+import BannerUploadButton from "@/components/elements/attachments/banner-upload-button"
+import ProfilePictureUploadButton from "@/components/elements/attachments/profile-picture-upload-button"
 
 export default function SettingsPage() {
   const { data: session, status } = useSession();
@@ -50,7 +52,7 @@ export default function SettingsPage() {
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
   const [email, setEmail] = useState("");
-  const [profileImage, setProfileImage] = useState<string | null>(null);
+  const [profileImage, setProfileImage] = useState<string | File | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Email change state
@@ -173,30 +175,9 @@ export default function SettingsPage() {
               <CardContent>
                 <div className="flex items-center gap-6">
                   <div className="relative group">
-                    <Avatar className="h-24 w-24">
-                      {profileImage ? (
-                        <AvatarImage src={profileImage} alt="Profilkép" />
-                      ) : (
-                        <AvatarFallback className="bg-primary/10 text-primary text-2xl font-semibold">
-                          {firstName[0]}
-                          {lastName[0]}
-                        </AvatarFallback>
-                      )}
-                    </Avatar>
-                    <button
-                      type="button"
-                      onClick={() => fileInputRef.current?.click()}
-                      className="absolute inset-0 rounded-full bg-black/50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
-                    >
-                      <Camera className="h-6 w-6 text-primary-foreground" />
-                      <span className="sr-only">Profilkép módosítása</span>
-                    </button>
-                    <input
-                      ref={fileInputRef}
-                      type="file"
-                      accept="image/*"
-                      className="hidden"
-                      onChange={handleProfileImageChange}
+                    <ProfilePictureUploadButton 
+                      onUpload={(file: File) => setProfileImage(file)}
+                      defaultImage={typeof profileImage === 'string' ? profileImage : undefined}
                     />
                   </div>
                   <div className="flex flex-col gap-2">

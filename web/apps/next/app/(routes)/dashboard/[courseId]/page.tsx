@@ -7,7 +7,7 @@ import React, { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 
 import { Button } from "@/components/ui/button";
-import { Brush, ClipboardList, Eye, Home, ImageIcon, Info, Palette, PenLine, Shield, Users, Upload } from "lucide-react";
+import { ClipboardList, Eye, Home, Info, Palette, PenLine, Shield, Users } from "lucide-react";
 
 import { UserAvatar } from "@/components/elements/avatar";
 import NoPostsCard from "@/components/elements/posts/no-posts-card";
@@ -17,19 +17,28 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Switch } from "@/components/ui/switch";
-import { generateColorFromInvitationCode } from "@/lib/dashboard/utils";
+import { getColorsFromColorCode } from "@/lib/dashboard/utils";
 
 import CourseBanner from "@/components/elements/course-banner";
 import PostCard from "@/components/elements/posts/post-card";
 
+import BannerUploadButton from "@/components/elements/attachments/banner-upload-button";
 import { useNotificationProvider } from "@/components/notification-provider";
+import {
+    useCourseDeleted,
+    useCourseMemberApproved,
+    useCourseMemberDeclined,
+    useCourseMemberJoin,
+    useCourseMemberLeave,
+    useNewPost,
+} from "@/hooks/use-websocket-events";
 import { Post, Submission } from "@studify/types";
 
 type CourseSettingsForm = {
     name: string;
 
     description: string;
-    bannerUrl: string;
+    bannerUrl: string | File;
     accentColor: string;
 
     allowComments: boolean;
@@ -59,18 +68,100 @@ export default function CoursePage({ params }: { params: Promise<{ courseId: str
     const [unverifiedStudents, setUnverifiedStudents] = useState<CourseMember[]>([]);
     
     const [teacherNames, setTeacherNames] = useState<string[]>([]);
-    const [colors, setColors] = useState<{ bg: string; text: string, neutralBgText: string }>({ bg: '', text: '', neutralBgText: '' });
+    const [color, setColor] = useState<string>("#FFFFFF");
+    const [colors, setColors] = useState<{ bg: React.CSSProperties; text: string, neutralBgText: string }>({ bg: {}, text: '', neutralBgText: '' });
     const [settingsForm, setSettingsForm] = useState<CourseSettingsForm>({
         name: "",
         description: "",
         bannerUrl: "",
-        accentColor: "#3b82f6",
+        accentColor: color,
         allowComments: true,
         showInviteCode: true,
         studentsCanCreatePosts: false,
         autoApproveMembers: false,
         autoRejectMembers: false,
     });
+
+    const regroupMembers = (members: CourseMember[]) => {
+        const nextTeachers = members.filter((member) => member.isTeacher);
+        const nextStudents = members.filter((member) => !member.isTeacher && member.isApproved);
+        const nextUnverifiedStudents = members.filter((member) => !member.isTeacher && !member.isApproved);
+
+        setTeachers(nextTeachers);
+        setStudents(nextStudents);
+        setUnverifiedStudents(nextUnverifiedStudents);
+        setTeacherNames(nextTeachers.map((teacher) => `${teacher.user.first_name} ${teacher.user.last_name}`));
+    };
+
+    useCourseMemberJoin((payload) => {
+        if (!course || payload?.course?.id !== course.id || !payload?.member) return;
+
+        setCourse((prevCourse) => {
+            if (!prevCourse) return prevCourse;
+            if (prevCourse.members.some((member) => member.user.id === payload.member.user.id)) return prevCourse;
+
+            const updatedMembers = [...prevCourse.members, payload.member];
+            regroupMembers(updatedMembers);
+            return { ...prevCourse, members: updatedMembers };
+        });
+    }, [course?.id]);
+
+    useCourseMemberLeave((payload) => {
+        if (!course || payload.courseId !== course.id) return;
+
+        setCourse((prevCourse) => {
+            if (!prevCourse) return prevCourse;
+
+            const updatedMembers = prevCourse.members.filter((member) => member.user.id !== payload.userId);
+            regroupMembers(updatedMembers);
+            return { ...prevCourse, members: updatedMembers };
+        });
+    }, [course?.id]);
+
+    useCourseMemberApproved((payload) => {
+        if (!course || payload.courseId !== course.id) return;
+
+        setCourse((prevCourse) => {
+            if (!prevCourse) return prevCourse;
+
+            const updatedMembers = prevCourse.members.map((member) =>
+                member.user.id === payload.userId ? { ...member, isApproved: true } : member
+            );
+
+            regroupMembers(updatedMembers);
+            return { ...prevCourse, members: updatedMembers };
+        });
+    }, [course?.id]);
+
+    useCourseMemberDeclined((payload) => {
+        if (!course || payload.courseId !== course.id) return;
+
+        setCourse((prevCourse) => {
+            if (!prevCourse) return prevCourse;
+
+            const updatedMembers = prevCourse.members.filter((member) => member.user.id !== payload.userId);
+            regroupMembers(updatedMembers);
+            return { ...prevCourse, members: updatedMembers };
+        });
+    }, [course?.id]);
+
+    useNewPost((payload) => {
+        if (!course || payload.courseId !== course.id || !payload.post) return;
+
+        setCourse((prevCourse) => {
+            if (!prevCourse) return prevCourse;
+            if (prevCourse.posts.some((post) => post.id === payload.post.id)) return prevCourse;
+
+            return { ...prevCourse, posts: [payload.post, ...prevCourse.posts] };
+        });
+    }, [course?.id]);
+
+    useCourseDeleted((payload) => {
+        if (!course || payload.courseId !== course.id) return;
+
+        notify("A kurzus törölve lett.", { type: "warning" });
+        router.push("/dashboard");
+    }, [course?.id, notify, router]);
 
     const handleDeclineStudent = async (studentId: number) => {
         const response = await fetch(`/api/courses/${courseId}/members/decline`, {
@@ -146,8 +237,7 @@ export default function CoursePage({ params }: { params: Promise<{ courseId: str
                 break;
             default:
                 notify("Sikertelen jóváhagyás", { type: "error", description: "Ismeretlen hiba történt." });
-        }
-                
+        }      
     }
 
     useEffect(() => {
@@ -170,6 +260,7 @@ export default function CoursePage({ params }: { params: Promise<{ courseId: str
             ...prev,
             name: course.name,
             bannerUrl: course.backgroundImage?.path || "",
+            color: course.color
         }));
     }, [course]);
 
@@ -195,20 +286,42 @@ export default function CoursePage({ params }: { params: Promise<{ courseId: str
         setCourse(tmpCourse);
         setTeachers(teachers);
         setStudents(students);
+        setColor(tmpCourse.color);
         setUnverifiedStudents(unverifiedStudents);
 
         const userMember = tmpCourse.members.find((member: any) => member.user.id === session.user?.id);
         setIsUserTeacher(userMember ? userMember.isTeacher : false);
 
         setTeacherNames(teachers.map((teacher: any) => `${teacher.user.first_name} ${teacher.user.last_name}`));
-        setColors(generateColorFromInvitationCode(tmpCourse.invitationCode));
+        setColor(tmpCourse.color);
+        setColors(getColorsFromColorCode(tmpCourse.color));
     }, [session, status, courseId, router]);
 
+    useEffect(() => {
+        if(!color) return;
+        
+        handleSettingsChange("accentColor", color);
+        setColors(getColorsFromColorCode(color));
+    }, [color]);
+
     const handleSettingsChange = <K extends keyof CourseSettingsForm>(key: K, value: CourseSettingsForm[K]) => {
-        setSettingsForm((prev) => ({
-            ...prev,
-            [key]: value,
-        }));
+        if (key === "bannerUrl" && value instanceof File) {
+            const reader = new FileReader();
+
+            reader.onload = (e) => {
+                setSettingsForm((prev) => ({
+                    ...prev,
+                    [key]: e.target?.result as string,
+                }));
+            };
+
+            reader.readAsDataURL(value);
+        } else {
+            setSettingsForm((prev) => ({
+                ...prev,
+                [key]: value,
+            }));
+        }
     };
 
     const handleSettingsSave = (event: React.FormEvent<HTMLFormElement>) => {
@@ -216,17 +329,25 @@ export default function CoursePage({ params }: { params: Promise<{ courseId: str
 
         setCourse((prevCourse) => {
             if (!prevCourse) return prevCourse;
+
             return {
                 ...prevCourse,
                 name: settingsForm.name.trim() || prevCourse.name,
+                color: settingsForm.accentColor,
             };
         });
+
+        setColor(settingsForm.accentColor);
 
         notify("Beallitasok elmentve", {
             type: "success",
             description: "A valtozasok jelenleg csak ezen az oldalon latszanak.",
         });
     };
+
+    useEffect(() => {
+        console.log("COLORS: ", colors);
+    }, [colors])
 
     const tabs = [
         { id: "stream", label: "Hírfolyam", icon: Home, isVisible: true },
@@ -270,8 +391,8 @@ export default function CoursePage({ params }: { params: Promise<{ courseId: str
                                     className={`${activeTab === tab.id ? `bg-primary/10` : ""} flex items-center space-x-2`}
                                     onClick={() => setActiveTab(tab.id)}
                                 >
-                                    <tab.icon className={`h-5 w-5 ${activeTab === tab.id ? colors.neutralBgText : ""}`} />
-                                    <span className={activeTab === tab.id ? colors.neutralBgText : ""}>{tab.label}</span>
+                                    <tab.icon className="h-5 w-5" style={{ color: activeTab === tab.id ? colors.neutralBgText : undefined }} />
+                                    <span style={{ color: activeTab === tab.id ? colors.neutralBgText : undefined }}>{tab.label}</span>
                                 </Button>
                             )
                         ))}
@@ -332,7 +453,7 @@ export default function CoursePage({ params }: { params: Promise<{ courseId: str
                     <div className="flex flex-col gap-6">
                         <Card>
                             <CardHeader className="flex flex-row items-center gap-2 p-6">
-                                <div className={`flex justify-center items-center p-3 ${colors.bg} rounded-full`}>
+                                <div className="flex justify-center items-center p-3 rounded-full" style={colors.bg}>
                                     <Users className="h-6 w-6 text-white m-0" />
                                 </div>
                                 <h1 className="text-lg font-semibold">Tanárok</h1>
@@ -349,7 +470,7 @@ export default function CoursePage({ params }: { params: Promise<{ courseId: str
                         {students.length > 0 && (
                         <Card>
                             <CardHeader className="flex flex-row items-center gap-2 p-6">
-                                <div className={`flex justify-center items-center p-3 ${colors.bg} rounded-full`}>
+                                <div className="flex justify-center items-center p-3 rounded-full" style={colors.bg}>
                                     <Users className="h-6 w-6 text-white m-0" />
                                 </div>
                                 <h1 className="text-lg font-semibold">Tanulók</h1>
@@ -367,7 +488,7 @@ export default function CoursePage({ params }: { params: Promise<{ courseId: str
                         {unverifiedStudents.length > 0 && isUserTeacher && (
                         <Card>
                             <CardHeader className="flex flex-row items-center gap-2 p-6">
-                                <div className={`flex justify-center items-center p-3 ${colors.bg} rounded-full`}>
+                                <div className="flex justify-center items-center p-3 rounded-full" style={colors.bg}>
                                     <Info className="h-6 w-6 text-white m-0" />
                                 </div>
                                 <h1 className="text-lg font-semibold">Jóváhagyásra váró tanulók</h1>
@@ -401,8 +522,8 @@ export default function CoursePage({ params }: { params: Promise<{ courseId: str
                                         className={`justify-start ${activeSettingsTab === tab.id ? `bg-primary/10` : ""} flex items-center space-x-2 w-full`}
                                         onClick={() => setActiveSettingsTab(tab.id)}
                                     >
-                                        <tab.icon className={`h-5 w-5 ${activeSettingsTab === tab.id ? colors.neutralBgText : ""}`} />
-                                        <span className={activeSettingsTab === tab.id ? colors.neutralBgText : ""}>{tab.label}</span>
+                                        <tab.icon className="h-5 w-5" style={{ color: activeSettingsTab === tab.id ? colors.neutralBgText : undefined }} />
+                                        <span style={{ color: activeSettingsTab === tab.id ? colors.neutralBgText : undefined }}>{tab.label}</span>
                                     </Button>
                                 ))}
                             </Card>
@@ -430,31 +551,16 @@ export default function CoursePage({ params }: { params: Promise<{ courseId: str
                                         {/* Banner Image */}
                                         <div className="space-y-2">
                                             <Label htmlFor="banner-url" className="text-sm font-medium">Banner kép</Label>
-                                            {settingsForm.bannerUrl ? (
-                                                <div className="relative mt-2 h-32 w-full overflow-hidden rounded-lg border border-border">
-                                                    <img
-                                                        src={settingsForm.bannerUrl}
-                                                        alt="Banner előnézet"
-                                                        className="h-full w-full object-cover"
-                                                    />
-                                                    <div className="absolute inset-0 bg-black/30 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity">
-                                                        <Button
-                                                            type="button"
-                                                            variant="outline"
-                                                            size="sm"
-                                                            className="bg-transparent text-white border-white hover:bg-white/20"
-                                                            onClick={() => handleSettingsChange("bannerUrl", "")}
-                                                        >
-                                                            Eltávolítás
-                                                        </Button>
-                                                    </div>
-                                                </div>
-                                            ) : (
-                                                <div className="mt-2 flex h-32 w-full items-center justify-center rounded-lg border-2 border-dashed border-border">
-                                                    <div className="flex flex-col items-center gap-1 text-muted-foreground">
-                                                        <ImageIcon className="h-8 w-8" />
-                                                        <span className="text-xs">Nincs banner megadva</span>
-                                                    </div>
+                                            
+                                            <BannerUploadButton
+                                                onUpload={(file: File) => handleSettingsChange("bannerUrl", file)}
+                                                defaultImage={course.backgroundImage?.path || undefined}
+                                            />
+                                            {(settingsForm.bannerUrl || course.backgroundImage) && (
+                                                <div className="w-full flex justify-end">
+                                                    <Button variant="outline" size="lg" className="w-full" onClick={() => handleSettingsChange("bannerUrl", "")}>
+                                                        Banner eltávolítása
+                                                    </Button>
                                                 </div>
                                             )}
                                         </div>

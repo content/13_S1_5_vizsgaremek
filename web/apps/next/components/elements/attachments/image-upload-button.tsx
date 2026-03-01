@@ -8,16 +8,38 @@ import { ImageCropper } from './image-cropper';
 
 interface BaseProps {
     className?: string;
-    imageClassName?: string;
     onUpload: (file: File) => void;
     defaultImage?: string | null;
+    styles?: {
+        container?: string;
+        imageWrapper?: string;
+        buttonOverlay?: string;
+        uploadButton?: string;
+        icon?: string;
+    };
 }
 
 export type ImageUploadButtonProps =
     | (BaseProps & { croppable?: false; aspectRatio?: never })
     | (BaseProps & { croppable: true; aspectRatio: number });
 
-export default function BannerUploadButton({ className, imageClassName="size-24 rounded-full sm:size-32", onUpload, defaultImage, croppable = true, aspectRatio }: ImageUploadButtonProps) {
+const defaultStyles = {
+    container: '',
+    imageWrapper: 'relative flex shrink-0 rounded-full items-center justify-center overflow-hidden border border-gray-500/30 bg-white/50 backdrop-blur-3xl dark:border-input dark:bg-black/30 dark:backdrop-blur-sm',
+    buttonOverlay: 'group absolute top-0 size-full rounded-full',
+    uploadButton: 'flex h-full w-full rounded-full items-center bg-zinc-900/10 font-medium text-white opacity-0 backdrop-blur-sm transition-all hover:border hover:!bg-black/70 group-hover:opacity-100',
+    icon: 'size-12 text-center',
+};
+
+export default function ImageUploadButton({ className, onUpload, defaultImage, croppable = true, aspectRatio, styles }: ImageUploadButtonProps) {
+    const mergedStyles = { 
+        container: cn(defaultStyles.container, styles?.container),
+        imageWrapper: cn(defaultStyles.imageWrapper, styles?.imageWrapper),
+        buttonOverlay: cn(defaultStyles.buttonOverlay, styles?.buttonOverlay),
+        uploadButton: cn(defaultStyles.uploadButton, styles?.uploadButton),
+        icon: cn(defaultStyles.icon, styles?.icon),
+     };
+    
     if (croppable && typeof aspectRatio !== 'number') {
         throw new Error('image-upload-button: aspectRatio is required when croppable is true');
     }
@@ -125,10 +147,10 @@ export default function BannerUploadButton({ className, imageClassName="size-24 
     }, []);
 
     return (
-        <div className={cn('', className)}>
+        <div className={cn(mergedStyles.container, className)}>
             <div className='relative flex flex-col items-center gap-2 align-top'>
                 <div
-                    className={cn('relative flex shrink-0 items-center justify-center overflow-hidden border border-gray-500/30 bg-white/50 backdrop-blur-3xl dark:border-input dark:bg-black/30 dark:backdrop-blur-sm', imageClassName)}
+                    className={mergedStyles.imageWrapper}
                     aria-label={previewUrl ? 'Előnézet' : 'Alapértelmezett kép'}
                 >
                     {previewUrl ? (
@@ -145,17 +167,17 @@ export default function BannerUploadButton({ className, imageClassName="size-24 
                         </div>
                     )}
                 </div>
-                <div className='group absolute top-0 size-full rounded-full overflow-hidden'>
+                <div className={mergedStyles.buttonOverlay}>
                     <Button
                         type='button'
                         onClick={handleButtonClick}
                         aria-haspopup='dialog'
-                        className='flex h-full w-full items-center rounded-full bg-zinc-900/10 font-medium text-white opacity-0 backdrop-blur-sm transition-all hover:border hover:!bg-black/70 group-hover:opacity-100'
+                        className={mergedStyles.uploadButton}
                     >
                         {fileName ? (
-                            <SquarePen className='size-10 text-center' />
+                            <SquarePen className={mergedStyles.icon} />
                         ) : (
-                            <ImageUpIcon className='size-10 text-center' />
+                            <ImageUpIcon className={mergedStyles.icon} />
                         )}
                     </Button>
                     <input
