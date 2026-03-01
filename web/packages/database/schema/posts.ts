@@ -12,7 +12,7 @@ export const posts = mysqlTable('posts', {
     description: varchar('description', { length: 1024 }),
     postTypeId: int('post_type_id').notNull().references(() => postTypes.id),
     isEdited: boolean('is_edited').notNull().default(false),
-    deadlineAt: timestamp('deadline_at').default(sql`NULL`),
+    deadlineAt: timestamp('deadline_at'),
     maxScore: int('max_score'),
     authorId: int('author_id').notNull().references(() => users.id),
     createdAt: timestamp('created_at').defaultNow().notNull(),

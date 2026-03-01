@@ -204,3 +204,13 @@ export async function updateName(userId: number, firstName: string, lastName: st
 
     return result[0].affectedRows > 0;
 }
+
+export async function changeEmail(currEmail: string, newEmail: string): Promise<boolean> {
+    const result = await db
+        .update(users)
+        .set({ email: newEmail })
+        .where(eq(users.email, currEmail))
+        .execute();
+
+    return result[0].affectedRows > 0;
+}
