@@ -11,6 +11,15 @@ import { Dialog, DialogContent, DialogFooter, DialogTitle, DialogTrigger } from 
 import { Skeleton } from "@/components/ui/skeleton";
 import { UploadDropzone } from "@/components/uploadthing/uploadthing";
 import { Course, CourseMember, Post, Submission } from "@studify/types";
+import {
+    useCourseDeleted,
+    useCourseMemberLeave,
+    useSubmissionCreated,
+    useSubmissionEdited,
+    useSubmissionGraded,
+    useSubmissionSubmitted,
+    useSubmissionUnsubmitted,
+} from "@/hooks/use-websocket-events";
 import { formatInTimeZone } from 'date-fns-tz';
 import { Home } from "lucide-react";
 import { useSession } from "next-auth/react";
@@ -36,6 +45,66 @@ export default function PostPage({ params }: { params: Promise<{ courseId: strin
     const [isSubmittingBtnDisabled, setIsSubmittingBtnDisabled] = React.useState<boolean>(false);
     const [isAddSubmissionAttachmentDialogOpen, setIsAddSubmissionAttachmentDialogOpen] = React.useState<boolean>(false);
     const [deadlineAt, setDeadlineAt] = React.useState<Date | null>(null);
+
+    const upsertPostSubmission = React.useCallback((incomingSubmission: Submission) => {
+        setPost((prevPost) => {
+            if (!prevPost) return prevPost;
+            if(!prevPost.submissions) prevPost.submissions = [];
+
+            const existingIndex = prevPost.submissions.findIndex((submission) => submission.id === incomingSubmission.id);
+            if (existingIndex === -1) {
+                return { ...prevPost, submissions: [...prevPost.submissions, incomingSubmission] };
+            }
+
+            const updatedSubmissions = [...prevPost.submissions];
+            updatedSubmissions[existingIndex] = incomingSubmission;
+            return { ...prevPost, submissions: updatedSubmissions };
+        });
+
+        if (incomingSubmission.student?.id === session?.user?.id) {
+            setSubmission(incomingSubmission);
+        }
+    }, [session?.user?.id]);
+
+    useSubmissionCreated((payload) => {
+        if (+payload.postId !== +postId) return;
+        upsertPostSubmission(payload.submission as Submission);
+    }, [postId, upsertPostSubmission]);
+
+    useSubmissionEdited((payload) => {
+        if (+payload.postId !== +postId) return;
+        upsertPostSubmission(payload.submission as Submission);
+    }, [postId, upsertPostSubmission]);
+
+    useSubmissionSubmitted((payload) => {
+        if (+payload.postId !== +postId) return;
+        upsertPostSubmission(payload.submission as Submission);
+    }, [postId, upsertPostSubmission]);
+
+    useSubmissionUnsubmitted((payload) => {
+        if (+payload.postId !== +postId) return;
+        upsertPostSubmission(payload.submission as Submission);
+    }, [postId, upsertPostSubmission]);
+
+    useSubmissionGraded((payload) => {
+        if (+payload.postId !== +postId) return;
+        upsertPostSubmission(payload.submission as Submission);
+    }, [postId, upsertPostSubmission]);
+
+    useCourseMemberLeave((payload) => {
+        if (+payload.courseId !== +courseId) return;
+        if (payload.userId !== session?.user?.id) return;
+
+        notify("Eltávolítottak a kurzusból.", { type: "warning" });
+        router.push("/dashboard");
+    }, [courseId, session?.user?.id, notify, router]);
+
+    useCourseDeleted((payload) => {
+        if (+payload.courseId !== +courseId) return;
+
+        notify("A kurzus törölve lett.", { type: "warning" });
+        router.push("/dashboard");
+    }, [courseId, notify, router]);
 
     const tabs = [
         { id: "course", label: "Vissza a kurzushoz", icon: Home, href: `/dashboard/${courseId}` },
@@ -307,7 +376,7 @@ export default function PostPage({ params }: { params: Promise<{ courseId: strin
                     </div>
                 </Card>
                 <div className={`mt-6 mx-auto w-full max-w-6xl grid grid-cols-1 ${!["ANNOUNCEMENT", "RESOURCE"].includes(postType || "") ? "lg:grid-cols-[2fr_1fr] xl:grid-cols-[3fr_1fr]" : ""} gap-6`}>
-                    <PostDetailsCard course={course} post={post} submission={submission}></PostDetailsCard>
+                    <PostDetailsCard course={course} post={post} submission={submission || undefined}></PostDetailsCard>
                     {!["ANNOUNCEMENT", "RESOURCE"].includes(postType || "") && (
                     <div className="flex flex-col gap-3">
                         <Card className="p-2">
@@ -422,7 +491,7 @@ export default function PostPage({ params }: { params: Promise<{ courseId: strin
                                         <Button
                                             className="mt-5 w-full"
                                             onClick={() => handleSubmissionSubmit()}
-                                            disabled={submissionAttachmentAdditions.size > 0 || post.deadlineAt && new Date(post.deadlineAt) < new Date()}
+                                            disabled={submissionAttachmentAdditions.size > 0 || post.deadlineAt && new Date(post.deadlineAt) < new Date() || false}
                                         >
                                             Beadás
                                         </Button>
@@ -431,7 +500,7 @@ export default function PostPage({ params }: { params: Promise<{ courseId: strin
                                         <Button
                                             className="mt-5 w-full"
                                             onClick={() => handleSubmissionUnsubmit()}
-                                            disabled={submissionAttachmentAdditions.size > 0 || (post.deadlineAt && new Date(post.deadlineAt) < new Date())}
+                                            disabled={submissionAttachmentAdditions.size > 0 || (post.deadlineAt && new Date(post.deadlineAt) < new Date()) || false}
                                         >
                                             Beadás visszavonása
                                         </Button>

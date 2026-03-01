@@ -1,8 +1,9 @@
 import { editSubmission, getPostById, getSubmissionById, isUserCourseMember } from "@studify/database";
 import { NextRequest, NextResponse } from "next/server";
-import { Attachment } from "@studify/types";
+import { Attachment, Course, Post } from "@studify/types";
 import { getServerSession } from "next-auth";
 import { authConfig } from "@/app/auth";
+import { fireWebsocketEvent } from "@/lib/websocket/websocket";
 
 export async function POST(req: NextRequest) {
     
@@ -30,7 +31,12 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({ error: 'Submission not found' }, { status: 404 });
     }
 
-    const isMember = await isUserCourseMember(post.courseId, userId);
+    const course = user.courses.find((c: Course) => c.posts.some((p: Post) => p.id === postId));
+    if(!course) {
+        return NextResponse.json({ error: 'Course not found for user' }, { status: 404 });
+    }
+
+    const isMember = await isUserCourseMember(course.id, userId);
     if(!isMember) {
         return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
     }
@@ -45,6 +51,8 @@ export async function POST(req: NextRequest) {
         newAttachments.map((att: Attachment) => ({ path: att.path, name: att.fileName })),
         keepExistingAttachmentIds
     );
+
+    await fireWebsocketEvent("submission-edited", { submission: editedSubmission, postId, courseId: course.id });
 
     return NextResponse.json(editedSubmission);
 }

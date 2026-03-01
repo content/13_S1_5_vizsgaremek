@@ -2,6 +2,7 @@ import { authConfig } from "@/app/auth";
 import { createCourse } from "@studify/database";
 import { getServerSession } from "next-auth";
 import { createAttachment } from "@studify/database";
+import { fireWebsocketEvent } from "@/lib/websocket/websocket";
 import { NextRequest, NextResponse } from "next/server";
 
 export async function POST(req: NextRequest) {
@@ -28,6 +29,8 @@ export async function POST(req: NextRequest) {
     }
 
     const course = await createCourse(userId, name, backgroundImage);
+
+    await fireWebsocketEvent("course-created", course);
 
     return NextResponse.json(course);
 }

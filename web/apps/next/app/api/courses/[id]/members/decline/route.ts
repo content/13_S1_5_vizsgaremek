@@ -2,6 +2,7 @@ import { authConfig } from "@/app/auth";
 import { declineUser, isUserTeacher } from "@studify/database";
 import { getServerSession } from "next-auth";
 import { NextRequest, NextResponse } from "next/server";
+import { fireWebsocketEvent } from "@/lib/websocket/websocket";
 
 export async function POST(req: NextRequest, { params }: { params: { id: string } }) {
     const session = await getServerSession(authConfig);
@@ -28,6 +29,8 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
     if(!result) {
         return NextResponse.json({ error: "Failed to decline user" }, { status: 500 });
     }
+
+    await fireWebsocketEvent("course-member-declined", { courseId: +courseId, userId: targetId });
 
     return NextResponse.json({ message: "User declined successfully" }, { status: 200 });
 }

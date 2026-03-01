@@ -1,8 +1,9 @@
 import { getPostById, getSubmissionById, gradeSubmission, updateSubmissionStatus } from "@studify/database";
 import { NextRequest, NextResponse } from "next/server";
-import { Submission } from "@studify/types";
+import { Course, Post, Submission } from "@studify/types";
 import { authConfig } from "@/app/auth";
 import { getServerSession } from "next-auth";
+import { fireWebsocketEvent } from "@/lib/websocket/websocket";
 
 export async function POST(req: NextRequest) {
     const session = await getServerSession(authConfig);
@@ -28,6 +29,11 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({ message: "Unauthorized" }, { status: 403 });
     }
 
+    const course = user.courses.find((c: Course) => c.posts.some((p: Post) => p.id === +postId));
+    if(!course) {
+        return NextResponse.json({ message: "Course not found for user" }, { status: 404 });
+    }
+
     const maxScore = post.maxScore;
     const submission = await getSubmissionById(+submissionId);
     if(!submission) {
@@ -35,7 +41,7 @@ export async function POST(req: NextRequest) {
     }
 
     if(score !== null) {
-        const parsedScore = Math.min(Math.max(+score, 0), maxScore);
+        const parsedScore = Math.min(Math.max(+score, 0), maxScore || 0);
 
         const isGradeUpdateSuccessful = await gradeSubmission(+submissionId, parsedScore);
         if(!isGradeUpdateSuccessful) {
@@ -49,6 +55,8 @@ export async function POST(req: NextRequest) {
     }
 
     const updatedSubmission = await getSubmissionById(+submissionId);
+
+    await fireWebsocketEvent("submission-graded", { submission: updatedSubmission, postId: +postId, courseId: course.id });
 
     return NextResponse.json({ submission: updatedSubmission }, { status: 200 });
 }

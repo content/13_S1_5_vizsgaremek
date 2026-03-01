@@ -2,6 +2,7 @@ import { authConfig } from "@/app/auth";
 import { createNewPost, getCourseById, getPostTypes } from "@studify/database";
 import { getServerSession } from "next-auth";
 import { NextRequest, NextResponse } from "next/server";
+import { fireWebsocketEvent } from "@/lib/websocket/websocket";
 
 export async function POST(req: NextRequest) {
     const session = await getServerSession(authConfig);
@@ -41,6 +42,8 @@ export async function POST(req: NextRequest) {
         attachments: attachments,
         maxScore: maxScore,
     });
+
+    await fireWebsocketEvent("new-post", { post, courseId });
 
     return NextResponse.json({ post }, { status: 201 });
 }

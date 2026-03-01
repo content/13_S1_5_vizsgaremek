@@ -10,9 +10,8 @@ export const registerCourseMemberLeaveListener = (socket: Socket) => {
         const allowed = await isUserCourseMember(course.id, user.sub.id);
         if (!allowed) return;
         
-        const courseId = `course:${course.id}`;
-
-        socket.to(courseId).emit("course-member-leave", {
+        const roomId = `course:${course.id}`;
+        socket.to(roomId).emit("course-member-leave", {
             course,
             member,
         });

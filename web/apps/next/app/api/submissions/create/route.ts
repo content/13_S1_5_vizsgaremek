@@ -3,6 +3,7 @@ import { getPostById, isUserCourseMember } from "@studify/database";
 import { createSubmission } from "@studify/database/queries/submissions/submissions";
 import { getServerSession } from "next-auth";
 import { NextRequest, NextResponse } from "next/server";
+import { fireWebsocketEvent } from "@/lib/websocket/websocket";
 
 export async function POST(req: NextRequest) {
     const session = await getServerSession(authConfig);
@@ -37,6 +38,8 @@ export async function POST(req: NextRequest) {
     if(!submission) {
         return NextResponse.json({ error: 'Could not create submission' }, { status: 500 });
     }
+
+    await fireWebsocketEvent("submission-created", { submission, postId, courseId: post.courseId });
 
     return NextResponse.json({ submission: submission }, { status: 201 });
 }

@@ -1,6 +1,12 @@
 "use client";
 
 import { useNotificationProvider } from "@/components/notification-provider";
+import {
+    useCourseDeleted,
+    useCourseMemberJoin,
+    useCourseMemberLeave,
+    useNewPost,
+} from "@/hooks/use-websocket-events";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -29,6 +35,66 @@ export default function CalendarPage() {
     const [view, setView] = useState<"week" | "month">("week");
     const [baseDate, setBaseDate] = useState<Date>(new Date());
 
+    const syncPostBuckets = (nextPosts: PostWithCourse[]) => {
+        setPostsWithNoDeadline(
+            nextPosts.filter((post: PostWithCourse) => !post.deadlineAt && ["ASSIGNMENT", "POLL", "QUESTION"].includes(post.postType.name))
+        );
+        setPostsWithDeadline(
+            nextPosts.filter((post: PostWithCourse) => post.deadlineAt && ["ASSIGNMENT", "POLL", "QUESTION"].includes(post.postType.name))
+        );
+    };
+
+    useNewPost((payload) => {
+        if (!payload?.post || !payload?.courseId) return;
+
+        setPosts((prev) => {
+            if (prev.some((post) => post.id === payload.post.id)) return prev;
+
+            const joinedCourse = session?.user?.courses?.find((course: Course) => course.id === payload.courseId);
+            if (!joinedCourse) return prev;
+
+            const nextPosts = [...prev, { ...(payload.post as Post), course: joinedCourse } as PostWithCourse];
+            syncPostBuckets(nextPosts);
+            return nextPosts;
+        });
+    }, [session?.user?.courses]);
+
+    useCourseDeleted((payload) => {
+        setPosts((prev) => {
+            const nextPosts = prev.filter((post) => post.course.id !== payload.courseId);
+            syncPostBuckets(nextPosts);
+            return nextPosts;
+        });
+    }, []);
+
+    useCourseMemberLeave((payload) => {
+        if (payload.userId !== session?.user?.id) return;
+
+        setPosts((prev) => {
+            const nextPosts = prev.filter((post) => post.course.id !== payload.courseId);
+            syncPostBuckets(nextPosts);
+            return nextPosts;
+        });
+    }, [session?.user?.id]);
+
+    useCourseMemberJoin((payload) => {
+        if (payload?.member?.user?.id !== session?.user?.id || !payload?.course) return;
+
+        setPosts((prev) => {
+            const coursePosts = (payload.course.posts || []).map((post: Post) => ({ ...post, course: payload.course } as PostWithCourse));
+
+            const merged = [...prev];
+            for (const coursePost of coursePosts) {
+                if (!merged.some((existingPost) => existingPost.id === coursePost.id)) {
+                    merged.push(coursePost);
+                }
+            }
+
+            syncPostBuckets(merged);
+            return merged;
+        });
+    }, [session?.user?.id]);
+
     useEffect(() => {
         if(status === "loading") return;
 
@@ -40,10 +106,7 @@ export default function CalendarPage() {
 
         const allPosts = session.user.courses.flatMap((course: Course) => course.posts.map((post: Post) => ({ ...post, course })));
         setPosts(allPosts);
-
-        const postsWithoutDeadline = allPosts.filter((post: PostWithCourse) => !post.deadlineAt && ["ASSIGNMENT", "POLL", "QUESTION"].includes(post.postType.name));
-        setPostsWithNoDeadline(postsWithoutDeadline);
-        setPostsWithDeadline(allPosts.filter((post: PostWithCourse) => post.deadlineAt && ["ASSIGNMENT", "POLL", "QUESTION"].includes(post.postType.name)));
+        syncPostBuckets(allPosts);
     }, [session, status, router]);
 
     return ( 

@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { Course, Post, CourseMember } from "@studify/types";
 import { authConfig } from "@/app/auth";
 import { getServerSession } from "next-auth";
+import { fireWebsocketEvent } from "@/lib/websocket/websocket";
 
 export async function POST(req: NextRequest) {
     const session = await getServerSession(authConfig);
@@ -56,6 +57,8 @@ export async function POST(req: NextRequest) {
     }
 
     const updatedSubmission = await getSubmissionById(+submissionId);
+
+    await fireWebsocketEvent("submission-unsubmitted", { submission: updatedSubmission, postId: +postId, courseId: course.id });
 
     return NextResponse.json(updatedSubmission, { status: 200 });
 }

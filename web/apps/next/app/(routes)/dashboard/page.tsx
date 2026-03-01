@@ -15,8 +15,16 @@ import { useEffect, useState } from "react";
 import CourseCard from "@/components/elements/course-card";
 
 import { useNotificationProvider } from "@/components/notification-provider";
+import {
+    useCourseCreated,
+    useCourseDeleted,
+    useCourseMemberJoin,
+    useCourseMemberLeave,
+} from "@/hooks/use-websocket-events";
 import { UploadDropzone } from "@/components/uploadthing/uploadthing";
 import { createCourse, joinCourse } from "@/lib/dashboard/utils";
+import CreateNewCourseDialog from "@/components/elements/dashboard/createNewCourseDialog";
+import { genUploader } from "uploadthing/client";
 
 export default function DashboardPage() {
     const router = useRouter();
@@ -35,9 +43,43 @@ export default function DashboardPage() {
 
     const [invitationCode, setInvitationCode] = useState("");
 
-    useEffect(() => {
-        document.title = "Dashboard - Studify";
-    }, [])
+    useCourseCreated((course) => {
+        const currentUserId = session?.user?.id;
+        if (!currentUserId) return;
+
+        const hasCurrentUser = (course as any)?.members?.some((member: any) => member.user.id === currentUserId);
+        if (!hasCurrentUser) return;
+
+        setCourses((prev) => {
+            if (prev.some((c) => c.id === course.id)) return prev;
+            return [...prev, course as Course];
+        });
+    }, [session?.user?.id]);
+
+    useCourseMemberJoin((payload) => {
+        const currentUserId = session?.user?.id;
+        if (!currentUserId) return;
+
+        if (payload?.member?.user?.id !== currentUserId) return;
+
+        setCourses((prev) => {
+            if (prev.some((c) => c.id === payload.course.id)) return prev;
+            return [...prev, payload.course as Course];
+        });
+    }, [session?.user?.id]);
+
+    useCourseMemberLeave((payload) => {
+        const currentUserId = session?.user?.id;
+        if (!currentUserId) return;
+
+        if (payload.userId !== currentUserId) return;
+
+        setCourses((prev) => prev.filter((course) => course.id !== payload.courseId));
+    }, [session?.user?.id]);
+
+    useCourseDeleted((payload) => {
+        setCourses((prev) => prev.filter((course) => course.id !== payload.courseId));
+    }, []);
 
     useEffect(() => {
         if(status === "loading") return;
@@ -67,6 +109,27 @@ export default function DashboardPage() {
 
         setCourses([...courses, newCourse]);
         setCreateDialogOpen(false);
+    }
+
+    const handleBannerUpload = async (file: File) => {
+        setIsNewCourseCreateBtnDisabled(true);
+        try {
+            const { uploadFiles } = genUploader({ fetch: window.fetch });
+            const res = await uploadFiles("imageUploader", { files: [file] });
+            const fileInfo = Array.isArray(res) ? res[0] : res?.[0] ?? res;
+            const url = fileInfo?.ufsUrl ?? fileInfo?.url ?? null;
+            if (url) {
+                notify("Sikeres feltöltés!", { type: "success", description: "A háttérkép sikeresen feltöltve." });
+                setNewCourseBackgroundImageUrl(url);
+            } else {
+                notify("Hiba a kép feltöltése során!", { type: "error", description: "Próbáld újra később!" });
+            }
+        } catch (err) {
+            console.error("Banner upload error:", err);
+            notify("Hiba a kép feltöltése során!", { type: "error", description: "Próbáld újra később!" });
+        } finally {
+            setIsNewCourseCreateBtnDisabled(false);
+        }
     }
 
     const handleJoinCourse = async () => {
@@ -121,62 +184,18 @@ export default function DashboardPage() {
                     </p>
 
                     <div className="flex flex-col sm:flex-row gap-3">
-                        <Dialog open={createDialogOpen} onOpenChange={setCreateDialogOpen}>
-                            <DialogTrigger asChild>
-                                <Button variant="outline" className="gap-2 bg-transparent">
-                                    <BookOpen className="h-4 w-4" />
-                                    Kurzus létrehozása
-                                </Button>
-                            </DialogTrigger>
-                            <DialogContent>
-                                <DialogHeader>
-                                    <DialogTitle>Kurzus létrehozása</DialogTitle>
-                                    <DialogDescription>
-                                        Töltsd ki az adatokat egy új kurzus létrehozásához. Később meghívhatod a diákokat.
-                                    </DialogDescription>
-                                </DialogHeader>
-                                <div className="space-y-4 py-4">
-                                    <div className="space-y-2">
-                                        <Label htmlFor="course-name">Kurzus neve</Label>
-                                        <Input id="course-name" placeholder="Matematika" onChange={(e) => setNewCourseName(e.target.value)} />
-                                    </div>
-                                    <div className="space-y-2">
-                                        <Label htmlFor="course-background-image-url">Kurzus háttérképe</Label>
-                                        <UploadDropzone
-                                            className="border-border bg-background hover:bg-accent/50 transition-colors"
-                                            endpoint="imageUploader"
-                                            onClientUploadComplete={(res) => {
-                                                const url = res[0]?.ufsUrl;
-                                                if(url) {
-                                                    notify("Sikeres feltöltés!", { type: "success", description: "A háttérkép sikeresen feltöltve." });
-                                                    setNewCourseBackgroundImageUrl(res[0]?.ufsUrl);
-                                                }
-                    
-                                                setIsNewCourseCreateBtnDisabled(false);
-                                            }}
-                    
-                                            onUploadProgress={(progress) => {
-                                                setIsNewCourseCreateBtnDisabled(progress < 100);
-                                            }}
-                    
-                                            onUploadError={(error: Error) => {
-                                                notify("Hiba a kép feltöltése során!", { type: "error", description: "Próbáld újra később!" });
-                                                setIsNewCourseCreateBtnDisabled(false);
-                                            }}
-                                        />
-                                    </div>
-                                </div>
-                                <DialogFooter>
-                                    <Button variant="outline" onClick={() => setCreateDialogOpen(false)}>
-                                        Mégse
-                                    </Button>
-                                    <Button disabled={isNewCourseCreateBtnDisabled} onClick={() => handleCreateCourse()}>
-                                        Kurzus létrehozása
-                                    </Button>
-                                </DialogFooter>
-                            </DialogContent>
-                        </Dialog>
                         
+                        <CreateNewCourseDialog 
+                            createDialogOpen={createDialogOpen}
+                            setCreateDialogOpen={setCreateDialogOpen}
+                            newCourseName={newCourseName}
+                            setNewCourseName={setNewCourseName}
+                            newCourseBackgroundImageUrl={newCourseBackgroundImageUrl}
+                            isNewCourseCreateBtnDisabled={isNewCourseCreateBtnDisabled}
+                            handleBannerUpload={handleBannerUpload}
+                            handleCreateCourse={handleCreateCourse}    
+                        />
+                    
                         <Dialog open={joinDialogOpen} onOpenChange={setJoinDialogOpen}>
                             <DialogTrigger asChild>
                                 <Button className="gap-2 bg-green-500 hover:bg-green-600">

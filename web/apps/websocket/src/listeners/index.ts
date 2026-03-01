@@ -7,8 +7,10 @@ import { registerMessageListener } from "./messages/message";
 import { registerNewPostListener } from "./posts/new-post";
 import { registerUserEmailVerificationListener } from "./user/email-verification";
 import { registerUserRegisterListener } from "./user/user-register";
+import { registerDeleteCourseListener } from "./course/course-deleted";
 
 export const registerSocketListeners = (socket: Socket) => {
+    registerDeleteCourseListener(socket);
     registerCourseMemberJoinListener(socket);
     registerCourseMemberLeaveListener(socket);
     registerNewCourseListener(socket);

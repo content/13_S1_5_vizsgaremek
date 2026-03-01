@@ -2,7 +2,7 @@ import { Express } from 'express';
 import { createServer } from 'http';
 import { Server, Socket } from 'socket.io';
 import { registerSocketListeners } from './listeners';
-import jwt from "jsonwebtoken";
+import { verify } from "jsonwebtoken";
 import { User } from '@studify/types';
 
 export const app: Express = require('express')();
@@ -27,7 +27,7 @@ io.use((socket, next) => {
     }
 
     try {
-        const user = jwt.verify(token, process.env.NEXTAUTH_SECRET!) as User;
+        const user = verify(token, process.env.NEXTAUTH_SECRET!) as User;
         socket.data.user = user;
         next();
     } catch (err) {
@@ -39,4 +39,20 @@ io.on('connection', (socket: Socket) => {
     console.log(`[CONNECTION]: ${socket.id} - total: ${io.engine.clientsCount}`);
 
     registerSocketListeners(socket);
+});
+
+server.listen(PORT, () => {
+    console.log(`Websocket server is running on port ${PORT}`);
+
+    app.post('/api/websocket/event', (req, res) => {
+        const { event, data, room } = req.body;
+        
+        if (room) {
+            io.to(room).emit(event, data);
+        } else {
+            io.emit(event, data);
+        }
+
+        res.json({ success: true });
+    });
 });

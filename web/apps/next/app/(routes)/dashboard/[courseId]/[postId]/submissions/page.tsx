@@ -10,6 +10,14 @@ import { Button } from "@/components/ui/button";
 import { Card, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Course, CourseMember, Post, Submission } from "@studify/types";
+import {
+    useCourseDeleted,
+    useSubmissionCreated,
+    useSubmissionEdited,
+    useSubmissionGraded,
+    useSubmissionSubmitted,
+    useSubmissionUnsubmitted,
+} from "@/hooks/use-websocket-events";
 import { Home, Notebook } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -27,6 +35,54 @@ export default function SubmissionsPage({ params }: { params: Promise<{ courseId
     const [submissions, setSubmissions] = React.useState<Submission[]>([]);
     const [submittedSubmissions, setSubmittedSubmissions] = React.useState<Submission[]>([]);
     const [isUserTeacher, setIsUserTeacher] = React.useState<boolean>(false);
+
+    const upsertSubmission = React.useCallback((incomingSubmission: Submission) => {
+        setSubmissions((prev) => {
+            const existingIndex = prev.findIndex((submission) => submission.id === incomingSubmission.id);
+            const nextSubmissions = [...prev];
+
+            if (existingIndex === -1) {
+                nextSubmissions.push(incomingSubmission);
+            } else {
+                nextSubmissions[existingIndex] = incomingSubmission;
+            }
+
+            setSubmittedSubmissions(nextSubmissions.filter((submission) => submission.status.name === "SUBMITTED"));
+            return nextSubmissions;
+        });
+    }, []);
+
+    useSubmissionCreated((payload) => {
+        if (+payload.postId !== +postId) return;
+        upsertSubmission(payload.submission as Submission);
+    }, [postId, upsertSubmission]);
+
+    useSubmissionEdited((payload) => {
+        if (+payload.postId !== +postId) return;
+        upsertSubmission(payload.submission as Submission);
+    }, [postId, upsertSubmission]);
+
+    useSubmissionSubmitted((payload) => {
+        if (+payload.postId !== +postId) return;
+        upsertSubmission(payload.submission as Submission);
+    }, [postId, upsertSubmission]);
+
+    useSubmissionUnsubmitted((payload) => {
+        if (+payload.postId !== +postId) return;
+        upsertSubmission(payload.submission as Submission);
+    }, [postId, upsertSubmission]);
+
+    useSubmissionGraded((payload) => {
+        if (+payload.postId !== +postId) return;
+        upsertSubmission(payload.submission as Submission);
+    }, [postId, upsertSubmission]);
+
+    useCourseDeleted((payload) => {
+        if (+payload.courseId !== +courseId) return;
+
+        notify("A kurzus törölve lett.", { type: "warning" });
+        router.push("/dashboard");
+    }, [courseId, notify, router]);
 
     const tabs = [
         { id: "course", label: "Vissza a kurzushoz", icon: Home, href: `/dashboard/${courseId}` },
@@ -64,6 +120,8 @@ export default function SubmissionsPage({ params }: { params: Promise<{ courseId
             router.push(`/dashboard/${courseId}/${postId}`);
             return;
         }
+
+        if(!userPost.submissions) userPost.submissions = [];
 
         const submittedSubmissionz = userPost.submissions.filter((s: Submission) => s.status.name === "SUBMITTED");
         

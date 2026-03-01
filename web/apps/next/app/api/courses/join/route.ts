@@ -1,8 +1,9 @@
-import { getCourseByInvitationCode, joinCourse } from "@studify/database";
+import { getCourseByInvitationCode, getCourseMembers, joinCourse } from "@studify/database";
 import { NextRequest, NextResponse } from "next/server";
 import { CourseMember } from "@studify/types";
 import { authConfig } from "@/app/auth";
 import { getServerSession } from "next-auth";
+import { fireWebsocketEvent } from "@/lib/websocket/websocket";
 
 export async function POST(req: NextRequest) {
     const session = await getServerSession(authConfig);
@@ -32,6 +33,10 @@ export async function POST(req: NextRequest) {
     }
 
     const joinedCourse = await joinCourse(userId, invitationCode);
+
+    const member = await getCourseMembers(course.id).then(members => members.find((m: CourseMember) => m.user.id === userId));
+
+    await fireWebsocketEvent("course-member-join", { course: course, member: member });
 
     return NextResponse.json(joinedCourse);
 }

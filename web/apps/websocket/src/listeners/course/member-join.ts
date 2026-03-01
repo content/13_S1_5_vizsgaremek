@@ -10,8 +10,8 @@ export const registerCourseMemberJoinListener = (socket: Socket) => {
         const allowed = await isUserCourseMember(course.id, user.sub.id);
         if (!allowed) return;
         
-        const courseId = `course:${course.id}`;
-        socket.to(courseId).emit("course-member-join", {
+        const roomId = `course:${course.id}`;
+        socket.to(roomId).emit("course-member-join", {
             course,
             member,
         });
