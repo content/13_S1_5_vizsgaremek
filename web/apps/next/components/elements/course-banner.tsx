@@ -1,4 +1,4 @@
-import { generateColorFromInvitationCode } from '@/lib/dashboard/utils';
+import { getColorsFromColorCode } from '@/lib/dashboard/utils';
 import { Course, CourseMember } from '@studify/types';
 import Image from 'next/image';
 
@@ -7,7 +7,7 @@ type CourseBannerProps = {
 }
 
 export default function CourseBanner({ course }: CourseBannerProps) {
-    const colors = generateColorFromInvitationCode(course.invitationCode);
+    const colors = getColorsFromColorCode(course.color);
 
     const teacherNames = course.members.filter((m: CourseMember) => m.isTeacher).map((t: CourseMember) => `${t.user.first_name} ${t.user.last_name}`);
 
@@ -16,7 +16,7 @@ export default function CourseBanner({ course }: CourseBannerProps) {
             {course.backgroundImage ? (
                 <Image src={course.backgroundImage.path} alt={`${course.name} background`} fill className="absolute object-cover z-1" />
             ) : (
-                <div className={`${colors.bg} absolute overflow-hidden rounded-lg w-full h-full z-1`} />
+                <div className="absolute overflow-hidden rounded-lg w-full h-full z-1" style={colors.bg} />
             )}
             <div className="relative max-w-6xl mx-auto z-10 p-6 md:py-8 ">
                 <h1 className="text-2xl md:text-3xl font-bold text-white mb-2 max-w-2xl">{course?.name}</h1>

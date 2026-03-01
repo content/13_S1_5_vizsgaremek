@@ -1,25 +1,69 @@
 "use client"
 
-import { Course } from "@studify/types";
-import Link from "next/link";
-import Image from "next/image";
-import { Button } from "@/components/ui/button"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { Button } from "@/components/ui/button";
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
-import { MoreVertical, ClipboardList, FolderOpen, Users } from "lucide-react"
-import { generateColorFromInvitationCode } from "@/lib/dashboard/utils";
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuSeparator,
+    DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { getColorsFromColorCode } from "@/lib/dashboard/utils";
+import { Course } from "@studify/types";
+import { MoreVertical } from "lucide-react";
+import { useSession } from "next-auth/react";
+import Image from "next/image";
+import Link from "next/link";
+import { useNotificationProvider } from "../notification-provider";
+import React, { useEffect } from "react";
 
 export default function CourseCard({course}: {course: Course}) {
-    const colors = generateColorFromInvitationCode(course.invitationCode);
+    const { notify } = useNotificationProvider();
+    const { data: session, status } = useSession();
+    
+    const colors = getColorsFromColorCode(course.color);
     
     const teachers = course.members.filter((member: any) => member.isTeacher);
     const theacherNames = teachers.map((teacher: any) => `${teacher.user.first_name} ${teacher.user.last_name}`);
+
+    const [isTeacher, setIsTeacher] = React.useState(false);
+
+    useEffect(() => {
+        if(status === "loading" || !session || !session.user) return;
+
+        const userId = session.user.id;
+        const isUserTeacher = course.members.some((member: any) => member.user.id === userId && member.isTeacher);
+
+        setIsTeacher(isUserTeacher);
+    }, [session, status]);
+
+    const copyInvitationCodeToClipboard = () => {
+        navigator.clipboard.writeText(course.invitationCode)
+            .then(() => {
+                notify("Meghívó kód másolva a vágólapra!", { type: "success" });
+            })
+            .catch(() => {
+                notify("Hiba történt a meghívó kód másolása során!", { type: "error" });
+            });
+    }
+
+    const handleLeaveCourse = async () => {
+        try {
+            const response = await fetch(`/api/courses/${course.id}/leave`, {
+                method: "POST",
+            });
+            
+            if (response.ok) {
+                notify("Sikeresen elhagytad a kurzust!", { type: "success" });
+                return;
+            }
+
+            const result = await response.json();
+            notify("Szerver hiba", { type: "error", description: result.error || "Hiba történt a kurzus elhagyása során!" });
+        } catch (error) {
+            notify("Hálózati hiba", { type: "error", description: "Nem sikerült csatlakozni a szerverhez. Kérlek próbáld újra később!" });
+        }
+    }
 
     return (
         <Link href={`/dashboard/${course.id}`}>
@@ -29,7 +73,7 @@ export default function CourseCard({course}: {course: Course}) {
                         {course.backgroundImage ? (
                             <Image src={course.backgroundImage.path} alt={`${course.name} background`} fill className="object-cover z-1" />
                         ) : (
-                            <div className={`${colors.bg} absolute inset-0 z-1`}></div>
+                            <div className="absolute inset-0 z-1" style={colors.bg}></div>
                         )}
                     </div>
                     <div className="absolute z-1 flex justify-between items-start h-full">
@@ -42,47 +86,37 @@ export default function CourseCard({course}: {course: Course}) {
                             </div>
                         </div>
                     </div>
-
-                    <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity z-2 overflow-hidden">
-                        <div className="bg-white/20">
-                            <DropdownMenu >
-                                <DropdownMenuTrigger asChild>
-                                    <Button variant="ghost" size="icon" className="h-8 w-8 text-white hover:bg-white/20">
-                                        <MoreVertical className="h-4 w-4" />
-                                    </Button>
-                                </DropdownMenuTrigger>
-                                <DropdownMenuContent align="end" className="w-48">
-                                    <DropdownMenuItem asChild className="cursor-pointer">
-                                        <Link href={`/dashboard/${course.id}`}>Kurzus megnyitása</Link>
-                                    </DropdownMenuItem>
-                                    <DropdownMenuItem className="cursor-pointer">Meghívó másolása</DropdownMenuItem>
-                                    <DropdownMenuSeparator />
-                                    <DropdownMenuItem className="text-red-600 hover:text-red-700 cursor-pointer">
-                                        Kurzus elhagyása
-                                    </DropdownMenuItem>
-                                </DropdownMenuContent>
-                            </DropdownMenu>
-                        </div>
-                    </div>
                 </div>
 
                 <div className="border-t border-border px-4 py-2.5 flex items-center justify-end gap-1 bg-muted/30">
                     <Button variant="ghost" size="sm" className="h-8 w-8 p-0 text-muted-foreground hover:text-foreground" asChild>
                     </Button>
                     <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="sm" className="h-8 w-8 p-0 text-muted-foreground hover:text-foreground">
-                        <MoreVertical className="h-4 w-4" />
-                        <span className="sr-only">További lehetőségek</span>
-                        </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
-                        <DropdownMenuItem asChild>
-                        <Link href={`/dashboard/${course.id}`}>Kurzus megtekintése</Link>
-                        </DropdownMenuItem>
-                        <DropdownMenuSeparator />
-                        <DropdownMenuItem>Meghívó másolása</DropdownMenuItem>
-                    </DropdownMenuContent>
+                        <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
+                            <Button variant="ghost" size="sm" className="h-8 w-8 p-0 text-muted-foreground hover:text-foreground">
+                            <MoreVertical className="h-4 w-4" />
+                            <span className="sr-only">További lehetőségek</span>
+                            </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end" className="w-48" onClick={(e) => e.stopPropagation()}>
+                            <DropdownMenuItem asChild className="cursor-pointer">
+                                <Link href={`/dashboard/${course.id}`}>Kurzus megnyitása</Link>
+                            </DropdownMenuItem>
+                            {course.invitationCode && (
+                                <DropdownMenuItem className="cursor-pointer" onClick={() => copyInvitationCodeToClipboard()}>
+                                    Meghívó másolása
+                                </DropdownMenuItem>
+                            )}
+                            
+                            {!isTeacher && (
+                                <>
+                                    <DropdownMenuSeparator />
+                                    <DropdownMenuItem className="text-red-500 hover:text-red-600 cursor-pointer" onClick={() => handleLeaveCourse()}>
+                                        Kurzus elhagyása
+                                    </DropdownMenuItem>
+                                </>  
+                            )}
+                        </DropdownMenuContent>
                     </DropdownMenu>
                 </div>
             </div>

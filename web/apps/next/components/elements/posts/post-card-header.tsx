@@ -1,6 +1,6 @@
 import { CardHeader, CardTitle } from "@/components/ui/card";
 import PostTypeMappings from "@/lib/dashboard/courseTypeMappings";
-import { generateColorFromInvitationCode } from "@/lib/dashboard/utils";
+import { getColorsFromColorCode } from "@/lib/dashboard/utils";
 import { Course, Post, Submission } from "@studify/types";
 
 type PostCardHeaderProps = {
@@ -12,7 +12,7 @@ type PostCardHeaderProps = {
 
 export function PostCardHeader({ course, post, submission, showCourseName=false }: PostCardHeaderProps) {
     const type = post.postType.name;
-    const colors = generateColorFromInvitationCode(course.invitationCode);
+    const colors = getColorsFromColorCode(course.color);
     
     const mappings = PostTypeMappings;
 
@@ -23,7 +23,7 @@ export function PostCardHeader({ course, post, submission, showCourseName=false 
     return (
         <CardHeader className={`flex flex-row justify-between items-center p-0 px-6 ${post.description ? "pt-6 pb-3" : "py-6"}`}>
             <div className={`flex items-center space-x-3 ${post.description ? "" : ""}`}>
-                <div className={`${colors.bg} p-1 rounded-lg w-10 h-10 flex items-center justify-center`}>
+                <div className="p-1 rounded-lg w-10 h-10 flex items-center justify-center" style={colors.bg}>
                     <IconComponent className="w-5 h-5" />
                 </div>
                 <div className="flex flex-col">

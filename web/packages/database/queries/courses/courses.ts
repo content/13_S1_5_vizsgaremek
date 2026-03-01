@@ -1,5 +1,6 @@
 import { Attachment, Course, CourseMember } from "@studify/types";
-import { generateColorFromInvitationCode, getContrastColor } from '../../../../apps/next/lib/dashboard/utils';
+import { generateColorFromInvitationCode } from '../../../../apps/next/lib/dashboard/utils';
+import { getDominantColor } from '../../lib/image-utils';
 import { and, eq } from 'drizzle-orm';
 import { db } from "../../mysql";
 import { backgroundAttachments, courses, coursesMembers } from '../../schema/courses';
@@ -74,6 +75,7 @@ export async function getCoursesByUserId(userId: number): Promise<Course[]> {
             id: courses.id,
             name: courses.name,
             invitationCode: courses.invitationCode,
+            color: courses.color
         })
         .from(courses)
         .innerJoin(coursesMembers, eq(courses.id, coursesMembers.courseId))
@@ -95,6 +97,7 @@ export async function getCoursesByUserId(userId: number): Promise<Course[]> {
             name: course.name,
             invitationCode: course.invitationCode,
             backgroundImage: backgroundImage,
+            color: course.color,
 
             members: members,
             posts: posts
@@ -167,7 +170,7 @@ export async function getCourseById(courseId: number): Promise<Course | null> {
         return null;
     }
 
-    const color = course.color || (await getContrastColor((await getCourseBackgroundImage(course.id))?.path || '')) || generateColorFromInvitationCode(course.invitationCode);
+    const color = course.color || (await getDominantColor((await getCourseBackgroundImage(course.id))?.path || '')) || generateColorFromInvitationCode(course.invitationCode);
     const backgroundImage = await getCourseBackgroundImage(course.id);
     const members = await getCourseMembers(course.id);
     const posts = await getPostsByCourseId(course.id);
@@ -197,7 +200,7 @@ export async function setBackgroundImageForCourse(courseId: number, attachment: 
 
 export async function createCourse(creatorId: number, name: string, backgroundImage: Attachment | null): Promise<Course> {
     const invitationCode = await generateInvitationCode();
-    const color = backgroundImage ? await getContrastColor(backgroundImage.path) : generateColorFromInvitationCode(invitationCode);
+    const color = backgroundImage ? await getDominantColor(backgroundImage.path) : generateColorFromInvitationCode(invitationCode);
     
     const result = await db
         .insert(courses)
@@ -267,6 +270,15 @@ export async function joinCourse(userId: number, invitationCode: string): Promis
     return { message: "Join request sent."  } as unknown as JSON;
 }
 
+export async function leaveCourse(userId: number, courseId: number): Promise<boolean> {
+    const result = await db
+        .delete(coursesMembers)
+        .where(and(eq(coursesMembers.courseId, courseId), eq(coursesMembers.userId, userId)))
+        .execute();
+
+    return result[0].affectedRows > 0;
+}
+
 export async function approveUser(courseId: number, userId: number): Promise<boolean> {
     const result = await db
         .update(coursesMembers)
@@ -283,6 +295,15 @@ export async function declineUser(courseId: number, userId: number): Promise<boo
     const result = await db
         .delete(coursesMembers)
         .where(and(eq(coursesMembers.courseId, courseId), eq(coursesMembers.userId, userId)))
+        .execute();
+
+    return result[0].affectedRows > 0;
+}
+
+export async function deleteCourse(courseId: number): Promise<boolean> {
+    const result = await db
+        .delete(courses)
+        .where(eq(courses.id, courseId))
         .execute();
 
     return result[0].affectedRows > 0;
