@@ -4,8 +4,6 @@ import type { AuthOptions, Session } from "next-auth";
 import Credentials from 'next-auth/providers/credentials';
 import { CourseMember, Course } from '@studify/types';
 
-
-
 export const authConfig: AuthOptions = {
     providers: [
         Credentials({
@@ -40,7 +38,7 @@ export const authConfig: AuthOptions = {
                     return null;
                 }
 
-                return user;
+                return user as any;
             },
         }),
     ],

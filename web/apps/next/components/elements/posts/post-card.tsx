@@ -1,7 +1,7 @@
 import { Course, Post, Submission } from '@studify/types';
 
 import { Card, CardContent } from '@/components/ui/card';
-import PostTypeMappings from '@/lib/dashboard/courseTypeMappings';
+import PostTypeMappings from '@/lib/dashboard/postTypeMappings';
 import Link from 'next/link';
 import { PostCardHeader } from './post-card-header';
 

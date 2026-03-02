@@ -1,5 +1,5 @@
 import { CardHeader, CardTitle } from "@/components/ui/card";
-import PostTypeMappings from "@/lib/dashboard/courseTypeMappings";
+import PostTypeMappings from "@/lib/dashboard/postTypeMappings";
 import { getColorsFromColorCode } from "@/lib/dashboard/utils";
 import { Course, Post, Submission } from "@studify/types";
 
