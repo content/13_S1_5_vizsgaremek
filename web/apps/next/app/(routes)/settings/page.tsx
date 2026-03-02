@@ -83,8 +83,6 @@ export default function SettingsPage() {
     
     const { first_name, last_name, email } = session.user;
 
-    console.log(session.user)
-
     setFirstName(first_name || "")
     setLastName(last_name || "")
     setEmail(email || "")

@@ -43,8 +43,6 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ error: Messages.Auth_Register_EmailAlreadyInUse }, { status: 400 });
     }
 
-    console.log(email);
-
     if(!validateEmail(email)) {
         return NextResponse.json({ error: Messages.Auth_Register_InvalidEmail }, { status: 400 });
     }

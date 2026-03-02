@@ -271,7 +271,6 @@ export default function PostPage({ params }: { params: Promise<{ courseId: strin
         switch(response.status) {
             case 200:
                 const data = await response.json();
-                console.log(data);  
                 setSubmission(data);
                 notify("Sikeres eltávolítás!", { type: "success", description: "A melléklet sikeresen eltávolítva." });
                 break;

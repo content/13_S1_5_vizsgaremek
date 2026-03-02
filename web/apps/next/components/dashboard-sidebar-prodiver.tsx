@@ -118,7 +118,7 @@ export function DashboardSidebar({ children }: { children: React.ReactNode }) {
 
         const allNames = [...firstName.split(" "), ...lastName.split(" ")];
         const monogramLetters: string[] = [];
-        
+
         allNames.forEach((n) => {
             if(n.length > 0 && monogramLetters.length < 2) {
                 monogramLetters.push(n[0].toUpperCase());
@@ -133,7 +133,6 @@ export function DashboardSidebar({ children }: { children: React.ReactNode }) {
         const path = window.location.pathname;
         const navItem = navItems.find(item => item.href === path);
         if(navItem) {
-            console.log(navItem.label);
             setCurrentPage(navItem.label);
         }
     }, [navItems]);

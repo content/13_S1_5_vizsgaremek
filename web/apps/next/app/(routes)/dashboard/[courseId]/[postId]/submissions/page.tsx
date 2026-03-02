@@ -124,8 +124,6 @@ export default function SubmissionsPage({ params }: { params: Promise<{ courseId
         if(!userPost.submissions) userPost.submissions = [];
 
         const submittedSubmissionz = userPost.submissions.filter((s: Submission) => s.status.name === "SUBMITTED");
-        
-        console.log(userPost.submissions);
 
         setCourse(userCourse);
         setPost(userPost);

@@ -15,7 +15,7 @@ import { Field, FieldGroup, FieldLabel } from "@/components/ui/field";
 import { UploadDropzone } from "@/components/uploadthing/uploadthing";
 import { useNotificationProvider } from "@/components/notification-provider";
 import { useSession } from "next-auth/react";
-import { Post } from "@studify/database";
+import { Post } from "@studify/types";
 import AttachmentUploadCard from "../attachments/attachment-upload-card";
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import { InputOTPGroup } from "@/components/ui/input-otp";
@@ -236,10 +236,6 @@ export default function NewPostDialog({ courseId, onNewPostCreated }: newPostDia
 
         fetchPostTypes();
     }, []);
-
-    useEffect(() => {
-        console.log(date);
-    }, [date])
 
     return (
         <Dialog open={newPostModalOpen} onOpenChange={setNewPostModalOpen}>
