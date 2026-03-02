@@ -68,7 +68,7 @@ export function LoginPage() {
                             <div className="space-y-2">
                                 <div className="flex items-center justify-between">
                                 <Label htmlFor="password">Jelszó</Label>
-                                <Link href="#" className="text-sm text-green-500 hover:text-green-600 transition-colors">
+                                <Link href="/login/forgot" className="text-sm text-green-500 hover:text-green-600 transition-colors">
                                     Elfelejtetted a jelszavad?
                                 </Link>
                                 </div>
