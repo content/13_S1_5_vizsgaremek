@@ -9,7 +9,7 @@ import { Label } from "@/components/ui/label";
 import { verifyEmailToken } from "@/lib/encryption/encryption";
 import { useSession } from "next-auth/react";
 import Head from "next/head";
-import { redirect, useRouter, useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import React, { useEffect, useState } from "react";
 
 export default function ResetPasswordPage() {
