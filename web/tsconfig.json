@@ -1,6 +1,13 @@
 {
   "compilerOptions": {
+    "target": "ES2022",
+    "module": "ES2022",
+    "lib": ["ES2022"],
+    "moduleResolution": "bundler",
     "baseUrl": ".",
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "allowSyntheticDefaultImports": true,
     "paths": {
       "@studify/types": ["./packages/types/index.ts"],
       "@studify/database": ["./packages/database/index.ts"]
