@@ -1,13 +1,13 @@
 "use client";
 
-import { Course, CourseMember } from "@studify/types";
+import { Course, CourseMember, CourseSettings, PostType } from "@studify/types";
 import { useSession } from "next-auth/react";
 import React, { useEffect, useState } from "react";
 
 import { useRouter } from "next/navigation";
 
 import { Button } from "@/components/ui/button";
-import { ClipboardList, Eye, Home, Info, Palette, PenLine, Shield, Users } from "lucide-react";
+import { ClipboardList, Eye, Home, Info, NotebookPen, Palette, PenLine, Shield, Users } from "lucide-react";
 
 import { UserAvatar } from "@/components/elements/avatar";
 import NoPostsCard from "@/components/elements/posts/no-posts-card";
@@ -33,6 +33,9 @@ import {
     useNewPost,
 } from "@/hooks/use-websocket-events";
 import { Post, Submission } from "@studify/types";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import postTypeMappings from "@/lib/dashboard/postTypeMappings";
+import { pt } from "date-fns/locale";
 
 type CourseSettingsForm = {
     name: string;
@@ -46,6 +49,8 @@ type CourseSettingsForm = {
     showInviteCode: boolean;
 
     studentsCanCreatePosts: boolean;
+    allowedStudentPostTypes: number[];
+
     autoApproveMembers: boolean;
     autoRejectMembers: boolean;
 };
@@ -66,10 +71,13 @@ export default function CoursePage({ params }: { params: Promise<{ courseId: str
     const [teachers, setTeachers] = useState<CourseMember[]>([]);
     const [students, setStudents] = useState<CourseMember[]>([]);
     const [unverifiedStudents, setUnverifiedStudents] = useState<CourseMember[]>([]);
-    
+    const [postTypes, setPostTypes] = useState<{ id: number; name: string }[]>([]);
+
     const [teacherNames, setTeacherNames] = useState<string[]>([]);
     const [color, setColor] = useState<string>("#FFFFFF");
     const [colors, setColors] = useState<{ bg: React.CSSProperties; text: string, neutralBgText: string }>({ bg: {}, text: '', neutralBgText: '' });
+    
+    const [settings, setSettings] = useState<CourseSettings | null>(null);
     const [settingsForm, setSettingsForm] = useState<CourseSettingsForm>({
         name: "",
         description: "",
@@ -78,6 +86,7 @@ export default function CoursePage({ params }: { params: Promise<{ courseId: str
         allowComments: true,
         showInviteCode: true,
         studentsCanCreatePosts: false,
+        allowedStudentPostTypes: [],
         autoApproveMembers: false,
         autoRejectMembers: false,
     });
@@ -92,6 +101,21 @@ export default function CoursePage({ params }: { params: Promise<{ courseId: str
         setUnverifiedStudents(nextUnverifiedStudents);
         setTeacherNames(nextTeachers.map((teacher) => `${teacher.user.first_name} ${teacher.user.last_name}`));
     };
+
+    useEffect(() => {
+        const fetchPostTypes = async () => {
+            try {
+                const response = await fetch('/api/posts');
+                const data = await response.json();
+
+                setPostTypes(data.postTypes);
+            } catch (error) {
+                console.error('Error fetching post types:', error);
+            }
+        };
+
+        fetchPostTypes();
+    }, []);
 
     useCourseMemberJoin((payload) => {
         if (!course || payload?.course?.id !== course.id || !payload?.member) return;
@@ -295,6 +319,15 @@ export default function CoursePage({ params }: { params: Promise<{ courseId: str
         setTeacherNames(teachers.map((teacher: any) => `${teacher.user.first_name} ${teacher.user.last_name}`));
         setColor(tmpCourse.color);
         setColors(getColorsFromColorCode(tmpCourse.color));
+
+        setSettings(tmpCourse.settings);
+
+        handleSettingsChange("allowComments", tmpCourse.settings.allowComments);
+        handleSettingsChange("showInviteCode", tmpCourse.settings.showInviteCode);
+        handleSettingsChange("studentsCanCreatePosts", tmpCourse.settings.studentsCanCreatePosts);
+        handleSettingsChange("allowedStudentPostTypes", tmpCourse.settings.allowedStudentPostTypes.map((pt: PostType) => pt.id));
+        handleSettingsChange("autoApproveMembers", tmpCourse.settings.autoApproveMembers);
+        handleSettingsChange("autoRejectMembers", tmpCourse.settings.autoRejectMembers);
     }, [session, status, courseId, router]);
 
     useEffect(() => {
@@ -324,30 +357,71 @@ export default function CoursePage({ params }: { params: Promise<{ courseId: str
         }
     };
 
-    const handleSettingsSave = (event: React.FormEvent<HTMLFormElement>) => {
+    const handleSettingsSave = async (event: React.FormEvent<HTMLFormElement>) => {
         event.preventDefault();
 
-        setCourse((prevCourse) => {
-            if (!prevCourse) return prevCourse;
-
-            return {
-                ...prevCourse,
-                name: settingsForm.name.trim() || prevCourse.name,
-                color: settingsForm.accentColor,
-            };
+        const response = await fetch(`/api/courses/${courseId}/settings`, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",            },
+            body: JSON.stringify({
+                name: settingsForm.name.trim(),
+                accentColor: settingsForm.accentColor,
+                allowComments: settingsForm.allowComments,
+                showInviteCode: settingsForm.showInviteCode,
+                studentsCanCreatePosts: settingsForm.studentsCanCreatePosts,
+                allowedStudentPostTypes: settingsForm.allowedStudentPostTypes,
+                autoApproveMembers: settingsForm.autoApproveMembers,
+                autoRejectMembers: settingsForm.autoRejectMembers,
+            }),
         });
 
-        setColor(settingsForm.accentColor);
+        if(!response.ok) {
+            notify("Hiba történt a beállítások mentésekor", {
+                type: "error",
+            });
+            return;
+        }
 
-        notify("Beallitasok elmentve", {
-            type: "success",
-            description: "A valtozasok jelenleg csak ezen az oldalon latszanak.",
-        });
+        switch(response.status) {
+            case 200:
+                setCourse((prevCourse) => {
+                    if (!prevCourse) return prevCourse;
+
+                    return {
+                        ...prevCourse,
+                        name: settingsForm.name.trim() || prevCourse.name,
+                        color: settingsForm.accentColor,
+                    };
+                });
+
+                setColor(settingsForm.accentColor);
+                
+                notify("Beállítások elmentve", {
+                    type: "success",
+                });
+                break;
+            case 400:
+                notify("Érvénytelen adatok", {
+                    type: "error",
+                });
+                break;
+            case 403:
+                notify("Nincs jogosultságod a művelet végrehajtásához", {
+                    type: "error",
+                });
+                break;
+            case 500:
+                notify("Hiba történt a beállítások mentésekor", {
+                    type: "error",
+                });
+                break;
+            default:
+                notify("Ismeretlen hiba történt", {
+                    type: "error",
+                });
+        }
     };
-
-    useEffect(() => {
-        console.log("COLORS: ", colors);
-    }, [colors])
 
     const tabs = [
         { id: "stream", label: "Hírfolyam", icon: Home, isVisible: true },
@@ -411,9 +485,6 @@ export default function CoursePage({ params }: { params: Promise<{ courseId: str
                                 <NewPostDialog courseId={course.id} onNewPostCreated={(post: Post) => {
                                     setCourse((prevCourse: Course | null) => {
                                         if (!prevCourse) return prevCourse;
-
-                                        console.log(post);
-                                        
 
                                         return {
                                             ...prevCourse,
@@ -652,26 +723,99 @@ export default function CoursePage({ params }: { params: Promise<{ courseId: str
                                             />
                                         </div>
 
-                                        <div className="flex items-center justify-between gap-4 rounded-lg border border-border p-4 transition-colors hover:bg-muted/50">
-                                            <div className="flex gap-3">
-                                                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-primary/10">
-                                                    <PenLine className="h-5 w-5 text-primary" />
+                                        <div className="rounded-lg border border-border overflow-hidden">
+                                            <div className="border-b border-border bg-muted/30 px-4 py-3">
+                                                <p className="text-sm font-medium">Tanulói bejegyzések</p>
+                                                <p className="text-xs text-muted-foreground">Állítsd be a tanulók jogosultságait a bejegyzésekhez.</p>
+                                            </div>
+                                            <div className="divide-y divide-border">
+                                                <div className="flex items-center justify-between gap-4 p-4 transition-colors hover:bg-muted/50">
+                                                    <div className="flex gap-3">
+                                                        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-chart-2/15">
+                                                            <PenLine className="h-5 w-5 text-chart-2" />
+                                                        </div>
+                                                        <div>
+                                                            <p className="font-medium">Tanulói bejegyzések</p>
+                                                            <p className="text-sm text-muted-foreground">Engedélyezi a tanulóknak, hogy új bejegyzéseket hozzanak létre.</p>
+                                                        </div>
+                                                    </div>
+                                                    <Switch
+                                                        checked={settingsForm.studentsCanCreatePosts}
+                                                        onCheckedChange={(value) => handleSettingsChange("studentsCanCreatePosts", value)}
+                                                    />
                                                 </div>
-                                                <div>
-                                                    <p className="font-medium">Tanulók posztolhatnak</p>
-                                                    <p className="text-sm text-muted-foreground">Engedélyezi a tanulóknak, hogy új bejegyzéseket hozzanak létre.</p>
+                                                <div className="flex items-center justify-between gap-4 p-4 transition-colors hover:bg-muted/50">
+                                                    <div className="flex gap-3">
+                                                        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg">
+                                                            <NotebookPen className="h-5 w-5" />
+                                                        </div>
+                                                        <div>
+                                                            <p className="font-medium">Engedélyezett bejegyzés típusok</p>
+                                                            <p className="text-sm text-muted-foreground">A tanulók csak az engedélyezett típusú bejegyzéseket hozhatják létre.</p>
+                                                        </div>
+                                                    </div>
+                                                    <DropdownMenu>
+                                                        <DropdownMenuTrigger asChild disabled={!settingsForm.studentsCanCreatePosts}>
+                                                            <Button variant="outline" size="sm">
+                                                                {settingsForm.allowedStudentPostTypes && settingsForm.allowedStudentPostTypes.length == 0 && (
+                                                                    <span>Egyik sem</span>
+                                                                )}
+
+                                                                {settingsForm.allowedStudentPostTypes && settingsForm.allowedStudentPostTypes.length == 1 && (
+                                                                    <span>
+                                                                        {postTypeMappings[postTypes.find(t => t.id === settingsForm.allowedStudentPostTypes[0])?.name || ""]?.title || "Ismeretlen típus"}
+                                                                    </span>
+                                                                )}
+                                                                
+                                                                {settingsForm.allowedStudentPostTypes && settingsForm.allowedStudentPostTypes.length > 1 && settingsForm.allowedStudentPostTypes.length <= 2 && (
+                                                                    <span>
+                                                                        {settingsForm.allowedStudentPostTypes.map((id, i) => {
+                                                                            const type = postTypes.find(t => t.id === id);
+                                                                            return (
+                                                                                <span key={i}>{postTypeMappings[type?.name || ""]?.title || "Ismeretlen típus"}{i < settingsForm.allowedStudentPostTypes.length - 1 ? ", " : ""}</span>
+                                                                            )
+                                                                        })}
+                                                                    </span>
+                                                                )}
+                                                                
+                                                                {settingsForm.allowedStudentPostTypes && settingsForm.allowedStudentPostTypes.length > 2 && settingsForm.allowedStudentPostTypes.length < postTypes.length && (
+                                                                    <span>{settingsForm.allowedStudentPostTypes.length} típus</span>
+                                                                )}
+
+                                                                {settingsForm.allowedStudentPostTypes && settingsForm.allowedStudentPostTypes.length > 0 &&  settingsForm.allowedStudentPostTypes.length === postTypes.length && (
+                                                                    <span>Összes</span>
+                                                                )}
+                                                            </Button>
+                                                        </DropdownMenuTrigger>
+                                                        <DropdownMenuContent align="end">
+                                                            {postTypes.map((type) => (
+                                                                <DropdownMenuItem 
+                                                                    key={type.id} 
+                                                                    onSelect={(event) => {
+                                                                        event.preventDefault();
+                                                                        const currentTypes = settingsForm.allowedStudentPostTypes || [];
+                                                                        if (currentTypes.includes(type.id)) {
+                                                                            handleSettingsChange("allowedStudentPostTypes", currentTypes.filter((id) => id !== type.id));
+                                                                        } else {
+                                                                            handleSettingsChange("allowedStudentPostTypes", [...currentTypes, type.id]);
+                                                                        }
+                                                                    }}
+                                                                className={`flex items-center gap-2 mb-1 ${settingsForm.allowedStudentPostTypes?.includes(type.id) ? "bg-primary/10 text-primary" : ""}`}
+                                                                >
+                                                                    {postTypeMappings[type.name]?.title || type.name}
+                                                                </DropdownMenuItem>
+                                                            ))}
+
+                                                        </DropdownMenuContent>
+                                                    </DropdownMenu>
                                                 </div>
                                             </div>
-                                            <Switch
-                                                checked={settingsForm.studentsCanCreatePosts}
-                                                onCheckedChange={(value) => handleSettingsChange("studentsCanCreatePosts", value)}
-                                            />
                                         </div>
 
                                         <div className="rounded-lg border border-border overflow-hidden">
                                             <div className="border-b border-border bg-muted/30 px-4 py-3">
                                                 <p className="text-sm font-medium">Csatlakozási szabályok</p>
-                                                <p className="text-xs text-muted-foreground">Állítsd be, hogyan kezeljük az új jelentkezéseket.</p>
+                                                <p className="text-xs text-muted-foreground">Állítsd be, az új jelentkezések kezelését.</p>
                                             </div>
                                             <div className="divide-y divide-border">
                                                 <div className="flex items-center justify-between gap-4 p-4 transition-colors hover:bg-muted/50">

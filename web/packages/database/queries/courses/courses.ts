@@ -1,11 +1,11 @@
-import { Attachment, Course, CourseMember } from "@studify/types";
+import { Attachment, Course, CourseMember, CourseSettings, PostType } from "@studify/types";
 import { generateColorFromInvitationCode } from '../../../../apps/next/lib/dashboard/utils';
 import { getDominantColor } from '../../lib/image-utils';
 import { and, eq } from 'drizzle-orm';
 import { db } from "../../mysql";
 import { backgroundAttachments, courses, coursesMembers } from '../../schema/courses';
 import { getCourseBackgroundImage } from '../attachments/attachments';
-import { getPostsByCourseId, getPostsByCourseIdandUserId } from '../posts/posts';
+import { getPostsByCourseId, getPostsByCourseIdandUserId, getPostTypes } from '../posts/posts';
 import { getUserByIdWithoutCourses } from '../users/users';
 
 async function generateInvitationCode(): Promise<string> {
@@ -59,11 +59,28 @@ export async function getCourseByInvitationCode(invitationCode: string): Promise
     const members = await getCourseMembers(course.id);
     const posts = await getPostsByCourseId(course.id);
 
+    // Handle settings that might be a string or object
+    let settingsData = course.settings;
+    if (typeof settingsData === 'string') {
+        settingsData = JSON.parse(settingsData);
+    }
+
+    const settings = {
+        allowComments: settingsData?.allowComments ?? true,
+        showInviteCode: settingsData?.showInviteCode ?? true,
+        studentsCanCreatePosts: settingsData?.studentsCanCreatePosts ?? false,
+        autoApproveMembers: settingsData?.autoApproveMembers ?? false,
+        autoRejectMembers: settingsData?.autoRejectMembers ?? false,
+        allowedStudentPostTypes: settingsData?.allowedStudentPostTypes || [],
+    };
+
     return {
         id: course.id,
         name: course.name,
         invitationCode: course.invitationCode,
         backgroundImage: backgroundImage,
+        color: course.color,
+        settings: settings,
         members: members,
         posts: posts,
     } as unknown as Course;
@@ -71,18 +88,15 @@ export async function getCourseByInvitationCode(invitationCode: string): Promise
 
 export async function getCoursesByUserId(userId: number): Promise<Course[]> {
     const coursez = await db
-        .select({
-            id: courses.id,
-            name: courses.name,
-            invitationCode: courses.invitationCode,
-            color: courses.color
-        })
+        .select()
         .from(courses)
         .innerJoin(coursesMembers, eq(courses.id, coursesMembers.courseId))
         .where(and(eq(coursesMembers.userId, userId), eq(coursesMembers.isApproved, true)))
         .execute();
+    
+    const coursesList = coursez.map(result => result.courses);
 
-    return await Promise.all(coursez.map(async (course) => {
+    return await Promise.all(coursesList.map(async (course) => {
         let members = await getCourseMembers(course.id);
         const backgroundImage = await getCourseBackgroundImage(course.id);
         const posts = await getPostsByCourseIdandUserId(course.id, userId);
@@ -92,6 +106,25 @@ export async function getCoursesByUserId(userId: number): Promise<Course[]> {
             members = members.filter(member => member.isApproved);
         }
 
+        let settingsObj = course.settings;
+        if (typeof settingsObj === 'string') {
+            settingsObj = JSON.parse(settingsObj);
+        }
+
+        const postTypes = await getPostTypes();
+
+        const settings: CourseSettings = {
+            allowComments: settingsObj?.allowComments ?? true,
+            showInviteCode: settingsObj?.showInviteCode ?? true,
+            studentsCanCreatePosts: settingsObj?.studentsCanCreatePosts ?? false,
+            autoApproveMembers: settingsObj?.autoApproveMembers ?? false,
+            autoRejectMembers: settingsObj?.autoRejectMembers ?? false,
+            allowedStudentPostTypes: (settingsObj?.allowedStudentPostTypes || []).map((typeId: number) => {
+                const postType = postTypes.find((pt) => pt.id === typeId);
+                return postType;
+            }).filter((type): type is PostType => type !== undefined),
+        }
+
         return { 
             id: course.id,
             name: course.name,
@@ -99,10 +132,32 @@ export async function getCoursesByUserId(userId: number): Promise<Course[]> {
             backgroundImage: backgroundImage,
             color: course.color,
 
+            settings: settings,
             members: members,
             posts: posts
         }
     })) as unknown as Course[];
+}
+
+interface SettingsProp {
+    allowComments?: boolean;
+    showInviteCode?: boolean;
+    studentsCanCreatePosts?: boolean;
+    autoApproveMembers?: boolean;
+    autoRejectMembers?: boolean;
+    allowedStudentPostTypes?: number[];
+}
+
+
+export async function updateSettings(courseId: number, settings: SettingsProp): Promise<boolean> {
+    const result = await db.update(courses)
+        .set({
+            settings: settings as any
+        })
+        .where(eq(courses.id, courseId))
+        .execute();
+
+    return result[0].affectedRows > 0;
 }
 
 export async function getCourseMembers(courseId: number): Promise<CourseMember[]> {
@@ -175,6 +230,21 @@ export async function getCourseById(courseId: number): Promise<Course | null> {
     const members = await getCourseMembers(course.id);
     const posts = await getPostsByCourseId(course.id);
 
+    // Handle settings that might be a string or object
+    let settingsData = course.settings;
+    if (typeof settingsData === 'string') {
+        settingsData = JSON.parse(settingsData);
+    }
+
+    const settings = {
+        allowComments: settingsData?.allowComments ?? true,
+        showInviteCode: settingsData?.showInviteCode ?? true,
+        studentsCanCreatePosts: settingsData?.studentsCanCreatePosts ?? false,
+        autoApproveMembers: settingsData?.autoApproveMembers ?? false,
+        autoRejectMembers: settingsData?.autoRejectMembers ?? false,
+        allowedStudentPostTypes: settingsData?.allowedStudentPostTypes || [],
+    };
+
     return {
         id: course.id,
         name: course.name,
@@ -183,9 +253,10 @@ export async function getCourseById(courseId: number): Promise<Course | null> {
         members: members,
         color: color,
         posts: posts,
+        settings: settings
     } as unknown as Course;
 }
-
+    
 export async function setBackgroundImageForCourse(courseId: number, attachment: Attachment): Promise<Boolean> {
     const result = await db
         .insert(backgroundAttachments)
@@ -223,21 +294,14 @@ export async function createCourse(creatorId: number, name: string, backgroundIm
         })
         .execute();
 
-    const members = await getCourseMembers(courseId);
-
     if(backgroundImage) {
         setBackgroundImageForCourse(courseId, backgroundImage);
     }
 
-    return {
-        id: courseId,
-        name: name,
-        invitationCode: invitationCode,
-        backgroundImage: backgroundImage,
-        
-        members: members,
-        posts: [],
-    } as unknown as Course;
+    // Fetch the complete course with all data including settings
+    const createdCourse = await getCourseById(courseId);
+    
+    return createdCourse as Course;
 }
 
 export async function joinCourse(userId: number, invitationCode: string): Promise<Course | JSON | null> {

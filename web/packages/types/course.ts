@@ -1,5 +1,5 @@
 import { Attachment } from './attachment';
-import { Post } from './post';
+import { Post, PostType } from './post';
 import { User } from './user';
 
 export interface CourseMember {
@@ -14,7 +14,17 @@ export interface Course {
     invitationCode: string;
     backgroundImage: Attachment | null;
     color: string;
+    settings: CourseSettings;
 
     members: CourseMember[];
     posts: Post[];
+}
+
+export interface CourseSettings {
+    allowComments: boolean;
+    showInviteCode: boolean;
+    studentsCanCreatePosts: boolean;
+    autoApproveMembers: boolean;
+    autoRejectMembers: boolean;
+    allowedStudentPostTypes: PostType[];
 }
