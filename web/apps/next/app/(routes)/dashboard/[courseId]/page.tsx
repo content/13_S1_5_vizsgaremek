@@ -432,6 +432,68 @@ export default function CoursePage({ params }: { params: Promise<{ courseId: str
         }
     };
 
+    const handleMemberPromoteToTeacher = async (memberId: number) => {
+        const response = await fetch(`/api/courses/${courseId}/members/promote`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                userId: memberId,
+            })
+        });
+
+        if(!response.ok) {
+            notify("Hiba történt a művelet során", {
+                type: "error",
+            });
+            return;
+        }
+
+        switch(response.status) {
+            case 200:
+                notify("Sikeres fokozás", {
+                    type: "success",
+                });
+                setCourse((prevCourse) => {
+                    if (!prevCourse) return prevCourse;
+
+                    const updatedMembers = prevCourse.members.map((member) => {
+                    if (member.user.id === memberId) {
+                        return { ...member, isTeacher: true };
+                    }
+                    return member;
+                });
+                regroupMembers(updatedMembers);
+                return { ...prevCourse, members: updatedMembers };
+                });
+                break;
+            case 400:
+                notify("Érvénytelen adatok", {
+                    type: "error",
+                });
+                break;
+            case 403:
+                notify("Nincs jogosultságod a művelet végrehajtásához", {
+                    type: "error",
+                });
+                break;
+            case 500:
+                notify("Hiba történt a művelet során", {
+                    type: "error",
+                });
+                break;
+            default:
+                notify("Ismeretlen hiba történt", {
+                    type: "error",
+                });
+        }
+    }
+
+    const handleUserBan = async (memberId: number) => {
+        
+    }
+
     const tabs = [
         { id: "stream", label: "Hírfolyam", icon: Home, isVisible: true },
         { id: "assignments", label: "Feladatok", icon: ClipboardList, isVisible: true },
@@ -484,8 +546,7 @@ export default function CoursePage({ params }: { params: Promise<{ courseId: str
                 {activeTab === "stream" && (
                     <div className="grid grid-cols-1 lg:grid-cols-[1fr_2fr] xl:grid-cols-[1fr_4fr] gap-6">
                         <div className="flex flex-col gap-4">
-                            
-                                <Card>
+                            <Card>
                                 <div className="p-4 flex flex-col gap-4 items-center justify-center">
                                     {course.invitationCode ? (
                                         <div>
@@ -499,7 +560,6 @@ export default function CoursePage({ params }: { params: Promise<{ courseId: str
                                     )}
                                 </div>
                             </Card>
-                            
                             
                             {(isUserTeacher || settings?.studentsCanCreatePosts) && (
                                 <NewPostDialog course={course} onNewPostCreated={(post: Post) => {
@@ -569,8 +629,27 @@ export default function CoursePage({ params }: { params: Promise<{ courseId: str
                             <CardContent>
                                 {students.map((student: CourseMember, index: number) => (
                                     <div key={`student-${student.user.id}-${index}`} className="flex items-center space-x-4 mb-4 bg-card-foreground/10 p-2 rounded-lg">
-                                        <UserAvatar user={student.user} size="large" />
-                                        <h1>{student.user.first_name} {student.user.last_name}</h1>
+                                        <div className="flex items-center gap-4">
+                                            <UserAvatar user={student.user} size="large" />
+                                            <h1>{student.user.first_name} {student.user.last_name}</h1>
+                                        </div>
+                                        <div>
+                                            <DropdownMenu>
+                                                <DropdownMenuTrigger asChild>
+                                                    <Button variant="outline" size="icon">
+                                                        <Eye className="h-4 w-4" />
+                                                    </Button>
+                                                </DropdownMenuTrigger>
+                                                <DropdownMenuContent>
+                                                    <DropdownMenuItem onSelect={() => handleMemberPromoteToTeacher(student.user.id)}>
+                                                        Fokozás tanárrá
+                                                    </DropdownMenuItem>
+                                                    <DropdownMenuItem onSelect={() => handleUserBan(student.user.id)}>
+                                                        Eltávolítás a kurzusból
+                                                    </DropdownMenuItem>
+                                                </DropdownMenuContent>
+                                            </DropdownMenu>
+                                        </div>
                                     </div>
                                 ))}
                             </CardContent>
@@ -594,6 +673,26 @@ export default function CoursePage({ params }: { params: Promise<{ courseId: str
                                         <div>
                                             <Button className="mr-2" onClick={(e) => handleApproveStudent(student.user.id)}>Jóváhagyás</Button>
                                             <Button variant="destructive" onClick={(e) => handleDeclineStudent(student.user.id)}>Elutasítás</Button>
+                                        </div>
+                                    </div>
+                                ))}
+                            </CardContent>
+                        </Card>
+                        )}
+                        {bannedUsers.length > 0 && isUserTeacher && (
+                        <Card>
+                            <CardHeader className="flex flex-row items-center gap-2 p-6">
+                                <div className="flex justify-center items-center p-3 rounded-full" style={colors.bg}>
+                                    <Info className="h-6 w-6 text-white m-0" />
+                                </div>
+                                <h1 className="text-lg font-semibold">Tiltott felhasználók</h1>
+                            </CardHeader>
+                            <CardContent>
+                                {bannedUsers.map((student: CourseMember, index: number) => (
+                                    <div key={`banned-student-${student.user.id}-${index}`} className="flex items-center justify-between space-x-4 mb-4 bg-card-foreground/10 p-2 rounded-lg">
+                                        <div className="flex items-center gap-4">
+                                            <UserAvatar user={student.user} size="large" />
+                                            <h1>{student.user.first_name} {student.user.last_name}</h1>
                                         </div>
                                     </div>
                                 ))}
