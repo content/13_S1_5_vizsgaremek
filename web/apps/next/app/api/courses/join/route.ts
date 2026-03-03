@@ -38,5 +38,5 @@ export async function POST(req: NextRequest) {
 
     await fireWebsocketEvent("course-member-join", { course: course, member: member });
 
-    return NextResponse.json(joinedCourse);
+    return NextResponse.json(joinedCourse, { status: 200 });
 }

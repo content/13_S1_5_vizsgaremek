@@ -14,7 +14,7 @@ type AttachmentPreviewDialogProps = {
 }
 
 export default function AttachmentPreviewDialog({ attachment, children, isOpen, onClose }: AttachmentPreviewDialogProps) {
-    const extension = attachment.fileName.split('.').pop()?.toLowerCase();
+    const extension = attachment.name.split('.').pop()?.toLowerCase();
 
     const isImage = extension === 'png' || extension === 'jpg' || extension === 'jpeg' || extension === 'gif' || extension === 'bmp' || extension === 'svg';
     
@@ -30,14 +30,14 @@ export default function AttachmentPreviewDialog({ attachment, children, isOpen, 
             <DialogContent>
                 <DialogHeader>
                     <DialogTitle>
-                        {attachment.fileName || 'Fájlnév ismeretlen'}
+                        {attachment.name || 'Fájlnév ismeretlen'}
                     </DialogTitle>
                 </DialogHeader>
                 <div>
                     {isImage ? (
                         <Image 
                             src={attachment.path}
-                            alt={attachment.fileName}
+                            alt={attachment.name || 'Attachment preview'}
                             width={800}
                             height={600}
                             className="max-w-full max-h-[80vh] object-contain"

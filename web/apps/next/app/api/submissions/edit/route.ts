@@ -48,7 +48,7 @@ export async function POST(req: NextRequest) {
     const editedSubmission = await editSubmission(
         submissionId,
         userId,
-        newAttachments.map((att: Attachment) => ({ path: att.path, name: att.fileName })),
+        newAttachments.map((att: Attachment) => ({ path: att.path, name: att.name })),
         keepExistingAttachmentIds
     );
 

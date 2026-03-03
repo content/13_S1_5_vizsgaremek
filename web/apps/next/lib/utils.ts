@@ -1,3 +1,4 @@
+import { Message } from "@studify/types";
 import { clsx, type ClassValue } from "clsx";
 import { twMerge } from "tailwind-merge";
 
@@ -41,4 +42,34 @@ export function isSameDay(a: Date, b: Date) {
 
 export function formatTime(d: Date) {
     return d.toLocaleTimeString("hu-HU", { hour: "2-digit", minute: "2-digit" });
+}
+
+export function groupMessagesByDate(messages: Message[]): { label: string; messages: Message[] }[] {
+    const groups: Map<string, Message[]> = new Map();
+
+    for (const msg of messages) {
+        const date = new Date(msg.createdAt);
+        const now = new Date();
+        const diffDays = Math.floor((now.getTime() - date.getTime()) / 86400000);
+
+        let label: string;
+        if (diffDays === 0) {
+            label = "Ma";
+        } else if (diffDays === 1) {
+            label = "Tegnap";
+        } else {
+            label = date.toLocaleDateString("hu-HU", {
+                year: "numeric",
+                month: "long",
+                day: "numeric",
+            });
+        }
+
+        if (!groups.has(label)) {
+            groups.set(label, []);
+        }
+        groups.get(label)!.push(msg);
+    }
+
+    return Array.from(groups.entries()).map(([label, messages]) => ({ label, messages }));
 }

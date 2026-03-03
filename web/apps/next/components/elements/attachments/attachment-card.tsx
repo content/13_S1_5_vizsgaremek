@@ -12,7 +12,9 @@ type AttachmentCardProps = {
 
 export default function AttachmentCard({ attachment, size = 'medium' }: AttachmentCardProps) {
     const [isOpen, setIsOpen] = useState(false);
-    const extension = attachment.fileName.split('.').pop()?.toLowerCase();
+
+    console.log(attachment);
+    const extension = attachment.name.split('.').pop()?.toLowerCase();
 
     const sizeMappings = {
         small: 'h-32 w-24',
@@ -32,7 +34,7 @@ export default function AttachmentCard({ attachment, size = 'medium' }: Attachme
                                 <Image 
                                     src={attachment.path} 
                                     fill 
-                                    alt={attachment.fileName} 
+                                    alt={attachment.name} 
                                     className="object-cover overflow-hidden select-none"
                                     draggable={false}
                                 />
@@ -45,7 +47,7 @@ export default function AttachmentCard({ attachment, size = 'medium' }: Attachme
                     </div>
                     <div className="flex p-4 items-center z-1 bg-primary/5 w-auto h-[30%] text-sm font-medium whitespace-nowrap overflow-hidden text-ellipsis">
                         <p className="w-full overflow-hidden text-ellipsis">
-                            {attachment.fileName || 'Fájlnév ismeretlen'}
+                            {attachment.name || 'Fájlnév ismeretlen'}
                         </p>
                     </div>
                 </CardContent>

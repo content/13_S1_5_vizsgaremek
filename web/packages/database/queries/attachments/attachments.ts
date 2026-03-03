@@ -50,7 +50,7 @@ export async function getAttachmentById(attachmentId: number): Promise<Attachmen
     return {
         id: attachment.id,
         uploaderId: attachment.uploaderId,
-        fileName: attachment.fileName,
+        name: attachment.fileName,
     } as Attachment;
 }
 
@@ -85,10 +85,10 @@ export async function getAttachmentsByPostId(postId: number): Promise<Attachment
         .where(eq(postAttachments.postId, postId))
         .execute();
 
-    const mappedResults = results.map((result) => ({
+    const mappedResults = results.map((result: any) => ({
         id: result.attachments.id,
         uploaderId: result.attachments.uploaderId,
-        fileName: result.attachments.fileName,
+        name: result.attachments.fileName,
         path: result.attachments.path,
         uploadedAt: result.attachments.uploadedAt,
     })) as Attachment[];
@@ -120,7 +120,7 @@ export async function getCourseBackgroundImage(courseId: number): Promise<Attach
     return {
         id: attachment.id,
         uploaderId: attachment.uploaderId,
-        fileName: attachment.fileName,
+        name: attachment.fileName,
         path: attachment.path,
         uploadedAt: attachment.uploadedAt,
     } as Attachment;
@@ -137,11 +137,11 @@ export async function getAttachmentsBySubmissionHistoryId(historyId: number): Pr
         .where(eq(submissionHistoryAttachments.historyId, historyId))
         .execute();
 
-    const mappedResults = results.map((result) => ({
+    const mappedResults = results.map((result: any) => ({
         id: result.attachments.id,
         uploaderId: result.attachments.uploaderId,
         path: result.attachments.path,
-        fileName: result.attachments.fileName,
+        name: result.attachments.fileName,
     }) as Attachment);
 
     return mappedResults;

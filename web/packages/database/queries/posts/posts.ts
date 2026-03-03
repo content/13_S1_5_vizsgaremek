@@ -175,7 +175,7 @@ export async function getPostTypes(): Promise<{id: number, name: string}[]> {
         .from(postTypes)
         .execute();
 
-    return postTypez.map((type) => ({id: type.id, name: type.name.toUpperCase()}));
+    return postTypez.map((type: any) => ({id: type.id, name: type.name.toUpperCase()}));
 }
 
 type CreateNewPostParams = {
@@ -304,24 +304,83 @@ export async function getCommentById(commentId: number): Promise<Comment | null>
     } as Comment;
 }
 
+export async function getConversationsByPostIdAndTeacherId(postId: number, teacherId: number): Promise<{ student: User, messages: Message[] }[]> {
+    const messagesResult = await db
+        .select()
+        .from(postMessages)
+        .where(and(
+            eq(postMessages.postId, postId),
+            or(
+                eq(postMessages.senderId, teacherId),
+                eq(postMessages.recipientId, teacherId)
+            )
+        ))
+        .execute();
+
+    const conversations: { student: User, messages: Message[] }[] = [];
+    const teacher = await getUserByIdWithoutCourses(teacherId);
+
+    for(const message of messagesResult) {
+        const otherUserId = message.senderId === teacherId ? message.recipientId : message.senderId;
+        const student = await getUserByIdWithoutCourses(otherUserId);
+        
+        if(!student) continue;
+
+        const existingConversation = conversations.find(c => c.student.id === student.id);
+        
+        const messageObj = {
+            id: message.id,
+            sender: message.senderId === teacherId ? teacher : student,
+            recipient: message.recipientId === teacherId ? teacher : student,
+            content: message.message,
+            createdAt: message.createdAt,
+        } as Message;
+
+        if(existingConversation) {
+            existingConversation.messages.push(messageObj);
+        } else {
+            conversations.push({
+                student: student,
+                messages: [messageObj]
+            });
+        }
+    }
+
+    conversations.forEach(conv => {
+        conv.messages.sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime());
+    });
+
+    return conversations;
+}
+
 export async function getConversationByPostIdAndUserId(postId: number, senderId: number, receipmentId: number): Promise<Message[]> {
     const messagesResult = await db
         .select()
         .from(postMessages)
         .where(and(
             eq(postMessages.postId, postId),
-            or(and(eq(postMessages.senderId, senderId), eq(postMessages.recipientId, receipmentId))),
-            and(eq(postMessages.senderId, receipmentId), eq(postMessages.recipientId, senderId))
+            or(
+                and(eq(postMessages.senderId, senderId), eq(postMessages.recipientId, receipmentId)),
+                and(eq(postMessages.senderId, receipmentId), eq(postMessages.recipientId, senderId))
+            )
         ))
         .execute();
 
-    const messages = messagesResult.map(async (message: any) => ({
-        id: message.id,
-        sender: await getUserByIdWithoutCourses(+message.senderId) as User,
-        recipient: await getUserByIdWithoutCourses(+message.recipientId) as User,
-        content: message.message,
-        createdAt: message.createdAt,
-    })) as unknown as Message[];
+    const sender = await getUserByIdWithoutCourses(senderId);
+    const recipient = await getUserByIdWithoutCourses(receipmentId);
+
+    const messages = await Promise.all(messagesResult.map(async (message: any) => {        
+        const senderUser = message.senderId === senderId ? sender : recipient;
+        const recipientUser = message.recipientId === receipmentId ? recipient : sender;
+
+        return {
+            id: message.id,
+            sender: senderUser,
+            recipient: recipientUser,
+            content: message.message,
+            createdAt: message.createdAt,
+        } as Message;
+    }) as unknown as Message[]);
 
     messages.sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime());
 

@@ -1,7 +1,7 @@
 export interface Attachment {
     id: number;
     uploaderId: number;
-    fileName: string;
+    name: string;
     path: string;
     uploadedAt: Date;
 }

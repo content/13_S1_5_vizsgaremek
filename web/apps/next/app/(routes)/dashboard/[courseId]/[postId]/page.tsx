@@ -216,7 +216,7 @@ export default function PostPage({ params }: { params: Promise<{ courseId: strin
                 userId: session?.user?.id,
                 postId: +postId,
                 submissionId: submission ? +submission.id : undefined,
-                attachments: [submission ? submission.attachments.map((att: any) => ({path: att.path, name: att.fileName})) : [], ...attachmentz].flat()
+                attachments: [submission ? submission.attachments.map((att: any) => ({ path: att.path, name: att.name })) : [], ...attachmentz].flat()
             })
         });
 
@@ -250,13 +250,13 @@ export default function PostPage({ params }: { params: Promise<{ courseId: strin
             return;
         }
         
-        const attachment = submission.attachments.find((att: any) => att.fileName === name && att.path === url);
+        const attachment = submission.attachments.find((att: any) => att.name === name && att.path === url);
         if(!attachment) {
             notify("A megadott melléklet nem található a leadott munkádban!", { type: "error" });
             return;
         }
 
-        const newAttachments = submission.attachments.filter((att: any) => att.fileName !== name || att.path !== url);
+        const newAttachments = submission.attachments.filter((att: any) => att.name !== name || att.path !== url);
         
         const response = await fetch(`/api/submissions/edit`, {
             method: "POST",
@@ -267,7 +267,7 @@ export default function PostPage({ params }: { params: Promise<{ courseId: strin
                 userId: session?.user?.id,
                 postId: +postId,
                 submissionId: +submission.id,
-                attachments: newAttachments.map((att: any) => ({path: att.path, name: att.fileName}))
+                attachments: newAttachments.map((att: any) => ({path: att.path, name: att.name }))
             })
         });
 
@@ -324,7 +324,7 @@ export default function PostPage({ params }: { params: Promise<{ courseId: strin
         if(!submission) return;
 
         submission.attachments = submission.attachments.map((attachment: any) => {
-            const name = attachment.fileName;
+            const name = attachment.name;
             const extension = name.split('.').pop()?.toLowerCase() || '';
 
             let type = 'file';
@@ -414,7 +414,7 @@ export default function PostPage({ params }: { params: Promise<{ courseId: strin
                                                 {submission.attachments?.map((attachment: any, index: number) => (
                                                     <SubmissionAttachmentCard 
                                                         key={`SUBMISSION_ATTACHMENT_${index}`}
-                                                        name={attachment.fileName}
+                                                        name={attachment.name}
                                                         url={attachment.path}
                                                         showRemoveButton={!["SUBMITTED", "GRADED"].includes(submission.status.name)}
                                                         onRemove={(name: string, url: string) => handleSubmissionAttachmentRemove(name, url)}
@@ -572,6 +572,24 @@ export default function PostPage({ params }: { params: Promise<{ courseId: strin
                                 </PostMessagesDialog>
                                 
                             </CardContent>
+                        </Card>
+                        )}
+                        {isUserTeacher && (
+                        <Card className="p-2">
+                            <div className="p-4 flex flex-col gap-2 justify-end">
+                                <h3 className="flex justify-center font-semibold mb-2">Üzenetek</h3>
+                                <p className="text-sm text-center text-muted-foreground mb-5">A tanulók kérdés esetén felkereshetnek privát üzenet formájában.</p>
+                                <div className="flex flex-col gap-2">
+                                    <Link href={`/dashboard/${courseId}/${postId}/messages`} className="w-full">
+                                        <Button
+                                            variant={"outline"}
+                                            className="w-full"
+                                        >
+                                            Üzenetek megtekintése
+                                        </Button>
+                                    </Link>
+                                </div>
+                            </div>
                         </Card>
                         )}
                     </div>

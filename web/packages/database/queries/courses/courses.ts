@@ -336,8 +336,12 @@ export async function joinCourse(userId: number, invitationCode: string): Promis
         return getCourseById(course.id);
     }
 
-    const isAutoApproved = course.settings?.autoApproveMembers ?? false;
-    const isAutoRejected = course.settings?.autoRejectMembers ?? false;
+    const settings = JSON.parse(course.settings || '{}');
+
+    const isAutoApproved = settings.autoApproveMembers ?? false;
+    const isAutoRejected = settings.autoRejectMembers ?? false;
+
+    console.log("Course settings for auto approval/rejection:", { isAutoApproved, isAutoRejected });
 
     if(isAutoRejected) {
         return { message: "Your request to join this course has been automatically rejected." } as unknown as JSON;
@@ -351,6 +355,10 @@ export async function joinCourse(userId: number, invitationCode: string): Promis
             isApproved: isAutoApproved
         })
         .execute();
+
+    if(isAutoApproved) {
+        return { message: "You have successfully joined the course." } as unknown as JSON;
+    }
 
     return { message: "Join request sent."  } as unknown as JSON;
 }

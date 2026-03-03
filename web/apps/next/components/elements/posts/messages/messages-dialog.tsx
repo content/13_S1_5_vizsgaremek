@@ -1,9 +1,13 @@
-import { useNotificationProvider } from "@/components/notification-provider";
+import { Button } from "@/components/ui/button";
 import { DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { getRelativeTime } from "@/lib/time/utils";
 import { Dialog } from "@radix-ui/react-dialog";
-import { Course, Message, Post, User } from "@studify/types"
-import { useSession } from "next-auth/react";
-import { useEffect, useState } from "react";
+import { Message, Post, User } from "@studify/types";
+import { ChevronDown, Loader2, Send } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { UserAvatar } from "../../avatar";
+import { groupMessagesByDate } from "@/lib/utils";
+import Chat from "./chat";
 
 type PostMessageModalProps = {
     post: Post;
@@ -16,92 +20,80 @@ type PostMessageModalProps = {
 }
 
 export default function PostMessagesDialog({ post, sender, receiver, children, isOpen, onClose }: PostMessageModalProps) {
-    const { notify } = useNotificationProvider();
-    const { data: session, status } = useSession();
-
-    const [course, setCourse] = useState<Course | null>(null);
-    const [isLoading, setIsLoading] = useState<boolean>(false);
-
     const [messages, setMessages] = useState<Message[]>([]);
 
-    const handleSendMessage = (message: string) => {
-        if(!course) return;
+    const messagesEndRef = useRef<HTMLDivElement>(null);
+    const inputRef = useRef<HTMLTextAreaElement>(null);
 
-        const response = fetch(`/api/courses/${course.id}/posts/${post.id}/messages`, {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json"
-            },
-            body: JSON.stringify({
-                senderId: sender.id,
-                receiverId: receiver.id,
-                message
-            })
+    const receiverFullName = `${receiver.first_name} ${receiver.last_name}`;
+
+    const scrollToBottom = (smooth = true) => {
+        messagesEndRef.current?.scrollIntoView({
+            behavior: smooth ? "smooth" : "instant",
         });
-
-        
-    }
+    };
 
     useEffect(() => {
-        if(!session || !session.user) return;
-
-        const course = session.user.courses.find((course: Course) => course.posts.some((p: Post) => p.id === post.id));
-        if(!course) return;
-
-        setCourse(course);
+        if (!isOpen) return;
 
         const fetchMessages = async () => {
-            const response = await fetch(`/api/courses/${course.id}/posts/${post.id}/messages`, {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json"
-                },
-                body: JSON.stringify({
-                    senderId: sender.id,
-                    receiverId: receiver.id
-                })
-            });
-        
-            if(!response.ok) {
-                notify("Hiba történt az üzenetek betöltésekor", { type: "error" });
-            }
+            try {
+                const response = await fetch(`/api/posts/${post.id}/messages`, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ receiverId: receiver.id }),
+                });
 
-            switch(response.status) {
-                case 200:
+                if (response.ok) {
                     const data = await response.json();
-                    setMessages(data.messages);
-                    setIsLoading(false);
-                    break;
-
-                case 404:
-                    notify("Nem található a kurzus vagy a poszt", { type: "error" });
-                    setIsLoading(false);
-                    break;
-                    
-                default:
-                    notify("Hiba történt az üzenetek betöltésekor", { type: "error" });
-                    setIsLoading(false);
+                    setMessages(data.messages || []);
+                    setTimeout(() => scrollToBottom(false), 100);
+                }
+            } catch (error) {
+                // silently fail
             }
         };
 
         fetchMessages();
-    }, [session, post, sender, receiver])
+    }, [isOpen, post, receiver.id]);
+
+    useEffect(() => {
+        if (isOpen) {
+            setTimeout(() => inputRef.current?.focus(), 200);
+        }
+    }, [isOpen]);
     
     return (
-        <Dialog open={isOpen} onOpenChange={(open) => {
-            if (!open) {
-                onClose();
-            }}}
+        <Dialog
+            open={isOpen}
+            onOpenChange={(open) => {
+                if (!open) onClose();
+            }}
         >
-            <DialogTrigger asChild>
-                {children}
-            </DialogTrigger>
-            <DialogContent>
-                <DialogHeader>
-                    <DialogTitle>Üzenetek</DialogTitle>
+            <DialogTrigger asChild>{children}</DialogTrigger>
+            <DialogContent className="flex flex-col sm:max-w-lg p-0 gap-0 overflow-hidden max-h-[85vh]">
+                <DialogHeader className="px-5 py-4 border-b border-border shrink-0">
+                    <div className="flex items-center gap-3">
+                        <UserAvatar
+                            user={receiver}
+                            size="small"
+                        />
+                        <div className="min-w-0">
+                            <DialogTitle className="text-base font-semibold truncate">
+                                {receiverFullName}
+                            </DialogTitle>
+                            <p className="text-xs text-muted-foreground truncate">Értékelő Tanár</p>
+                        </div>
+                    </div>
                 </DialogHeader>
-                <p>Messages here</p>
+
+                <Chat 
+                    messages={messages} 
+                    sender={sender}
+                    receiver={receiver}
+                    post={post}
+                />
             </DialogContent>
-        </Dialog> 
+        </Dialog>
     )
 }
