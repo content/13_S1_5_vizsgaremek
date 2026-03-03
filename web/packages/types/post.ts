@@ -11,6 +11,7 @@ export interface Message {
 
 export interface Comment {
     id: number;
+    post: Post;
     sender: User;
     message: string;
     createdAt: Date;

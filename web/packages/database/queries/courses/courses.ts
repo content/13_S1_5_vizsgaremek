@@ -94,9 +94,9 @@ export async function getCoursesByUserId(userId: number): Promise<Course[]> {
         .where(and(eq(coursesMembers.userId, userId), eq(coursesMembers.isApproved, true)))
         .execute();
     
-    const coursesList = coursez.map(result => result.courses);
+    const coursesList = coursez.map((result: any) => result.courses);
 
-    return await Promise.all(coursesList.map(async (course) => {
+    return await Promise.all(coursesList.map(async (course: any) => {
         let members = await getCourseMembers(course.id);
         const backgroundImage = await getCourseBackgroundImage(course.id);
         const posts = await getPostsByCourseIdandUserId(course.id, userId);
@@ -122,7 +122,7 @@ export async function getCoursesByUserId(userId: number): Promise<Course[]> {
             allowedStudentPostTypes: (settingsObj?.allowedStudentPostTypes || []).map((typeId: number) => {
                 const postType = postTypes.find((pt) => pt.id === typeId);
                 return postType;
-            }).filter((type): type is PostType => type !== undefined),
+            }).filter((type: PostType): type is PostType => type !== undefined),
         }
 
         return { 
@@ -171,7 +171,7 @@ export async function getCourseMembers(courseId: number): Promise<CourseMember[]
         .where(eq(coursesMembers.courseId, courseId))
         .execute();
 
-    return Promise.all(members.map(async (member) => {
+    return Promise.all(members.map(async (member: any) => {
         const userResult = await getUserByIdWithoutCourses(member.userId);
 
         return {

@@ -1,6 +1,6 @@
 import { and, eq } from 'drizzle-orm';
 
-import { Attachment, PollPostOption, Post } from '@studify/types';
+import { Attachment, Comment, PollPostOption, Post, User } from '@studify/types';
 import { db } from '../../mysql';
 import { comments, pollPostsOptions, postAttachments, posts, postTypes } from '../../schema/posts';
 import { createAttachment, createRelation, getAttachmentsByPostId } from '../attachments/attachments';
@@ -16,11 +16,7 @@ export async function getPostsByCourseId(courseId: number): Promise<Post[]> {
         .execute();
 
     const coursePostsArr = await Promise.all(coursePosts.map(async (post: any) => {
-        const commentz = await db
-            .select()
-            .from(comments)
-            .where(and(eq(comments.postId, post.id)))
-            .execute();
+        const commentz = await getCommentsByPostId(post.id);
 
         const attachments = await getAttachmentsByPostId(post.id);
         const postType = await getPostType(post.postTypeId);
@@ -88,6 +84,8 @@ export async function getPostById(postId: number): Promise<Post | null> {
 
     const author = await getUserByIdWithoutCourses(post.authorId);
 
+    const commentz = await getCommentsByPostId(post.id);
+
     return {
         id: post.id,
         courseId: post.courseId,
@@ -100,8 +98,60 @@ export async function getPostById(postId: number): Promise<Post | null> {
         maxScore: post.maxScore,
         attachments: await getAttachmentsByPostId(post.id),
         author: author,
+        comments: commentz
     } as unknown as Post;
 }
+
+export async function getPostByIdWithoutComments(postId: number): Promise<Post | null> {
+    const postResult = await db
+        .select()
+        .from(posts)
+        .where(eq(posts.id, postId))
+        .execute();
+
+    const post = postResult[0];
+
+    if (!post) {
+        return null;
+    }
+
+    return {
+        id: post.id,
+        courseId: post.courseId,
+        description: post.description,
+        createdAt: post.createdAt,
+        deadlineAt: post.deadlineAt,
+        isEdited: post.isEdited,
+        name: post.name,
+        postType: await getPostType(post.postTypeId),
+        maxScore: post.maxScore,
+        attachments: await getAttachmentsByPostId(post.id),
+        comments: [],
+    } as unknown as Post;
+}
+
+export async function getCommentsByPostId(postId: number): Promise<Comment[]> {
+    const commentResults = await db
+        .select()
+        .from(comments)
+        .where(eq(comments.postId, postId))
+        .execute();
+
+    const post = await getPostByIdWithoutComments(postId);
+
+    return await Promise.all(commentResults.map(async (comment: any) => {
+        const sender = await getUserByIdWithoutCourses(comment.senderId);
+
+        return {
+            id: comment.id,
+            post: post!,
+            sender: sender as User,
+            message: comment.content,
+            createdAt: comment.createdAt,
+        } as Comment;
+    }));
+}
+
 
 export async function getPostType(typeId: number): Promise<{id: number, name: string} | null> {
     const postTypeResult =  await db
@@ -211,4 +261,45 @@ export async function addPollOptionToPost(postId: number, optionText: string): P
         optionText: optionText,
         voteCount: 0,
     } as PollPostOption;
+}
+
+export async function createNewComment(postId: number, senderId: number, message: string): Promise<number | null> {
+    const result = await db
+        .insert(comments)
+        .values({
+            postId: postId,
+            senderId: senderId,
+            content: message,
+        })
+        .execute();
+
+    return result[0].insertId || null; 
+}
+
+export async function getCommentById(commentId: number): Promise<Comment | null> {
+    const commentResult = await db
+        .select()
+        .from(comments)
+        .where(eq(comments.id, commentId))
+        .execute();
+
+    const comment = commentResult[0];
+
+    if (!comment) {
+        return null;
+    }
+
+    const post = await getPostById(comment.postId);
+
+    if(!post) {
+        return null;
+    }
+
+    return {
+        id: comment.id,
+        post: post!,
+        sender: await getUserByIdWithoutCourses(comment.senderId) as User,
+        message: comment.content,
+        createdAt: comment.createdAt,
+    } as Comment;
 }
