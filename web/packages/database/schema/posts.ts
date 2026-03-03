@@ -45,7 +45,6 @@ export const postMessages = mysqlTable('post_messages', {
     postId: int('post_id').notNull().references(() => posts.id),
     senderId: int('sender_id').notNull().references(() => users.id),
     recipientId: int('recipient_id').notNull().references(() => users.id),
-    maxScore: int('max_score'),
     message: varchar('message', { length: 2048 }).notNull(),
     createdAt: timestamp('created_at').defaultNow().notNull()
 });

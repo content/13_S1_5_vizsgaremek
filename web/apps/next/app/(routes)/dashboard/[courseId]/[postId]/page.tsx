@@ -6,11 +6,11 @@ import CourseBanner from "@/components/elements/course-banner";
 import PostDetailsCard from "@/components/elements/posts/post-details-card";
 import { useNotificationProvider } from "@/components/notification-provider";
 import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogFooter, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Skeleton } from "@/components/ui/skeleton";
 import { UploadDropzone } from "@/components/uploadthing/uploadthing";
-import { Course, CourseMember, Post, Submission } from "@studify/types";
+import { Course, CourseMember, Post, Submission, User } from "@studify/types";
 import {
     useCourseDeleted,
     useCourseMemberLeave,
@@ -26,6 +26,7 @@ import { useSession } from "next-auth/react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import React, { useEffect } from "react";
+import PostMessagesDialog from "@/components/elements/posts/messages/messages-dialog";
 
 export default function PostPage({ params }: { params: Promise<{ courseId: string, postId: string }> }) {
     const { courseId, postId } = React.use(params);
@@ -45,6 +46,8 @@ export default function PostPage({ params }: { params: Promise<{ courseId: strin
     const [isSubmittingBtnDisabled, setIsSubmittingBtnDisabled] = React.useState<boolean>(false);
     const [isAddSubmissionAttachmentDialogOpen, setIsAddSubmissionAttachmentDialogOpen] = React.useState<boolean>(false);
     const [deadlineAt, setDeadlineAt] = React.useState<Date | null>(null);
+
+    const [isMessagesDialogOpen, setIsMessagesDialogOpen] = React.useState<boolean>(false);
 
     const upsertPostSubmission = React.useCallback((incomingSubmission: Submission) => {
         setPost((prevPost) => {
@@ -339,6 +342,10 @@ export default function PostPage({ params }: { params: Promise<{ courseId: strin
         });
     }, [submission])
 
+    const onMessageDialogClose = () => {
+        setIsMessagesDialogOpen(false);
+    }
+
     return (
         !course || !post ? (
         <div className="flex flex-col gap-2">
@@ -380,7 +387,7 @@ export default function PostPage({ params }: { params: Promise<{ courseId: strin
                     <div className="flex flex-col gap-3">
                         <Card className="p-2">
                             <div className="p-4 flex flex-col gap-2 justify-end">
-                                {isUserTeacher &&(
+                                {isUserTeacher && (
                                     <div>
                                         <h3 className="flex justify-center font-semibold mb-2">Feladatok kezelése</h3>
                                         <p className="text-sm text-center text-muted-foreground mb-5">Tekintsd meg és értékeld a beadott feladatokat!</p>
@@ -523,6 +530,50 @@ export default function PostPage({ params }: { params: Promise<{ courseId: strin
                                 )}
                             </div>
                         </Card>
+                        {!isUserTeacher && session && session.user && (
+                        <Card>
+                            <CardHeader>
+                                <CardTitle>
+                                    <h3 className="text-lg">Privát üzenetek</h3>
+                                    <p className="text-sm text-muted-foreground font-normal">Kérdezz a feladattal kapcsolatban!</p>
+                                </CardTitle>
+                            </CardHeader>
+                            <CardContent>
+                                <PostMessagesDialog
+                                    sender={
+                                        {
+                                            ...session.user,
+                                            created_at: new Date((session.user as any).created_at)
+                                        } as User
+                                    }
+                                    receiver={
+                                        (() => {
+                                            const teacherMember = course.members.find((m: CourseMember) => m.isTeacher);
+                                            
+                                            if (!teacherMember) return undefined as any;
+                                            
+                                            return {
+                                                ...teacherMember.user,
+                                                created_at: new Date((teacherMember.user as any).created_at)
+                                            } as User;
+                                        })()
+                                    }
+                                    post={post}
+                                    isOpen={isMessagesDialogOpen}
+                                    onClose={onMessageDialogClose}
+                                >
+                                    <Button
+                                        variant={"default"}
+                                        className="w-full"
+                                        onClick={() => setIsMessagesDialogOpen(true)}
+                                    >
+                                        Üzenetek megtekintése
+                                    </Button>        
+                                </PostMessagesDialog>
+                                
+                            </CardContent>
+                        </Card>
+                        )}
                     </div>
                     )}
                 </div>

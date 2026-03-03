@@ -1,8 +1,8 @@
-import { and, eq } from 'drizzle-orm';
+import { and, eq, or } from 'drizzle-orm';
 
-import { Attachment, Comment, PollPostOption, Post, User } from '@studify/types';
+import { Attachment, Comment, Message, PollPostOption, Post, User } from '@studify/types';
 import { db } from '../../mysql';
-import { comments, pollPostsOptions, postAttachments, posts, postTypes } from '../../schema/posts';
+import { comments, pollPostsOptions, postAttachments, postMessages, posts, postTypes } from '../../schema/posts';
 import { createAttachment, createRelation, getAttachmentsByPostId } from '../attachments/attachments';
 import { getAllSubmissionsByPostId } from '../submissions/submissions';
 import { getCourseMembers } from '../courses/courses';
@@ -302,4 +302,65 @@ export async function getCommentById(commentId: number): Promise<Comment | null>
         message: comment.content,
         createdAt: comment.createdAt,
     } as Comment;
+}
+
+export async function getConversationByPostIdAndUserId(postId: number, senderId: number, receipmentId: number): Promise<Message[]> {
+    const messagesResult = await db
+        .select()
+        .from(postMessages)
+        .where(and(
+            eq(postMessages.postId, postId),
+            or(and(eq(postMessages.senderId, senderId), eq(postMessages.recipientId, receipmentId))),
+            and(eq(postMessages.senderId, receipmentId), eq(postMessages.recipientId, senderId))
+        ))
+        .execute();
+
+    const messages = messagesResult.map(async (message: any) => ({
+        id: message.id,
+        sender: await getUserByIdWithoutCourses(+message.senderId) as User,
+        recipient: await getUserByIdWithoutCourses(+message.recipientId) as User,
+        content: message.message,
+        createdAt: message.createdAt,
+    })) as unknown as Message[];
+
+    messages.sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime());
+
+    return messages;
+}
+
+export async function sendMessageToPostConversation(postId: number, senderId: number, content: string): Promise<Message | null> {
+    const post = await getPostById(postId);
+
+    if(!post) {
+        return null;
+    }
+
+    const recipientId = post.author.id === senderId ? null : post.author.id;
+    if(!recipientId) {
+        return null;
+    }
+
+    const result = await db
+        .insert(postMessages)
+        .values({
+            postId: postId,
+            senderId: senderId,
+            recipientId: recipientId,
+            message: content,
+        })
+        .execute();
+
+    const messageId = result[0].insertId;
+
+    if(!messageId) {
+        return null;
+    }
+
+    return {
+        id: messageId,
+        sender: await getUserByIdWithoutCourses(senderId) as User,
+        recipient: await getUserByIdWithoutCourses(recipientId) as User,
+        content: content,
+        createdAt: new Date(),
+    } as Message;
 }
