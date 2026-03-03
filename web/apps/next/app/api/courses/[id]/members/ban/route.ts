@@ -1,5 +1,6 @@
 import { authConfig } from "@/app/auth";
-import { demoteMember } from "@studify/database";
+import { fireWebsocketEvent } from "@/lib/websocket/websocket";
+import { kickMember } from "@studify/database";
 import { CourseMember } from "@studify/types";
 import { getServerSession } from "next-auth";
 import { NextResponse } from "next/server";
@@ -40,11 +41,12 @@ export async function POST(request: Request, { params }: { params: { id: string 
         return NextResponse.json({ error: 'User is not a member of the course' }, { status: 404 });
     }
 
-    const success = await demoteMember(courseId, userId);
-
+    const success = await kickMember(courseId, userId);
     if(!success) {
-        return NextResponse.json({ error: 'Failed to promote member' }, { status: 500 });
+        return NextResponse.json({ error: 'Failed to kick member' }, { status: 500 });
     }
+    
+    await fireWebsocketEvent("course-member-leave", { courseId: +courseId, userId });
 
     return NextResponse.json({ success: true });
 }

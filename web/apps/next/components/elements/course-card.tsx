@@ -95,7 +95,7 @@ export default function CourseCard({course}: {course: Course}) {
                         <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
                             <Button variant="ghost" size="sm" className="h-8 w-8 p-0 text-muted-foreground hover:text-foreground">
                             <MoreVertical className="h-4 w-4" />
-                            <span className="sr-only">További lehetőségek</span>
+                                <span className="sr-only">További lehetőségek</span>
                             </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end" className="w-48" onClick={(e) => e.stopPropagation()}>

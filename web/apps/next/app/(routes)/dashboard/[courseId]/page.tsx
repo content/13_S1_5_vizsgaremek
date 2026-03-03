@@ -7,7 +7,7 @@ import React, { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 
 import { Button } from "@/components/ui/button";
-import { ClipboardList, Eye, Home, Info, NotebookPen, Palette, PenLine, Shield, Users } from "lucide-react";
+import { ClipboardList, Eye, Home, Info, MoreVertical, NotebookPen, Palette, PenLine, Shield, Users } from "lucide-react";
 
 import { UserAvatar } from "@/components/elements/avatar";
 import NoPostsCard from "@/components/elements/posts/no-posts-card";
@@ -24,6 +24,7 @@ import PostCard from "@/components/elements/posts/post-card";
 
 import BannerUploadButton from "@/components/elements/attachments/banner-upload-button";
 import { useNotificationProvider } from "@/components/notification-provider";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import {
     useCourseDeleted,
     useCourseMemberApproved,
@@ -32,10 +33,8 @@ import {
     useCourseMemberLeave,
     useNewPost,
 } from "@/hooks/use-websocket-events";
-import { Post, Submission } from "@studify/types";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import postTypeMappings from "@/lib/dashboard/postTypeMappings";
-import { pt } from "date-fns/locale";
+import { Post, Submission } from "@studify/types";
 
 type CourseSettingsForm = {
     name: string;
@@ -308,13 +307,17 @@ export default function CoursePage({ params }: { params: Promise<{ courseId: str
             return;
         }
 
-        const teachers = tmpCourse.members.filter((member: any) => member.isTeacher);
-        const students = tmpCourse.members.filter((member: any) => !member.isTeacher && member.isApproved);
-        const unverifiedStudents = tmpCourse.members.filter((member: any) => !member.isTeacher && !member.isApproved);
+        const teachers = tmpCourse.members.filter((member: any) => member.isTeacher && member.isApproved && !member.isBanned);
+        const students = tmpCourse.members.filter((member: any) => !member.isTeacher && member.isApproved && !member.isBanned);
+        const unverifiedStudents = tmpCourse.members.filter((member: any) => !member.isTeacher && !member.isApproved && !member.isBanned);
+        
         const bannedUsers = tmpCourse.members.filter((member: any) => member.isBanned);
 
         setCourse(tmpCourse);
         
+        console.log(session.user);
+        console.log(teachers, students, bannedUsers, unverifiedStudents);
+
         setTeachers(teachers);
         setStudents(students);
         setBannedUsers(bannedUsers);
@@ -455,18 +458,22 @@ export default function CoursePage({ params }: { params: Promise<{ courseId: str
                 notify("Sikeres fokozás", {
                     type: "success",
                 });
+
                 setCourse((prevCourse) => {
                     if (!prevCourse) return prevCourse;
 
                     const updatedMembers = prevCourse.members.map((member) => {
-                    if (member.user.id === memberId) {
-                        return { ...member, isTeacher: true };
-                    }
-                    return member;
+                        if (member.user.id === memberId) {
+                            return { ...member, isTeacher: true };
+                        }
+                        return member;
+                    });
+
+                    regroupMembers(updatedMembers);
+
+                    return { ...prevCourse, members: updatedMembers };
                 });
-                regroupMembers(updatedMembers);
-                return { ...prevCourse, members: updatedMembers };
-                });
+
                 break;
             case 400:
                 notify("Érvénytelen adatok", {
@@ -491,7 +498,148 @@ export default function CoursePage({ params }: { params: Promise<{ courseId: str
     }
 
     const handleUserBan = async (memberId: number) => {
-        
+        const response = await fetch(`/api/courses/${courseId}/members/ban`, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+                userId: memberId,
+            })
+        });
+
+        if(!response.ok) {
+            notify("Hiba történt a művelet során", {
+                type: "error"
+            });
+            return;
+        }
+
+        switch(response.status) {
+            case 200:
+                notify("Sikeres eltávolítás", {
+                    type: "success",
+                });
+
+                setCourse((prevCourse) => {
+                    if (!prevCourse) return prevCourse;
+
+                    const updatedMembers = prevCourse.members.filter((member) => member.user.id !== memberId);
+                    regroupMembers(updatedMembers);
+                    return { ...prevCourse, members: updatedMembers };
+                });
+                break;
+            case 400:
+                notify("Érvénytelen adatok", {
+                    type: "error",
+                });
+                break;
+            case 403:
+                notify("Nincs jogosultságod a művelet végrehajtásához", {
+                    type: "error",
+                });
+                break;
+            case 500:
+                notify("Hiba történt a művelet során", {
+                    type: "error",
+                });
+                break;
+            default:
+                notify("Ismeretlen hiba történt", {
+                    type: "error",
+                });
+        }
+    }
+
+    const handleMemberDemoteToStudent = async (memberId: number) => {
+        const response = await fetch(`/api/courses/${courseId}/members/demote`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                userId: memberId,
+            })
+        });
+
+        if(!response.ok) {
+            notify("Hiba történt a művelet során", { type: "error" });
+        }
+
+        switch(response.status) {
+            case 200:
+                notify("Sikeres lefokozás", { type: "success" });
+                
+                setCourse((prevCourse) => {
+                    if (!prevCourse) return prevCourse;
+
+                    const updatedMembers = prevCourse.members.map((member) => {
+                        if (member.user.id === memberId) {
+                            return { ...member, isTeacher: false };
+                        }
+
+                        return member;
+                    });
+
+                    regroupMembers(updatedMembers);
+                    return { ...prevCourse, members: updatedMembers };
+                });
+
+                break;
+            case 400:
+                notify("Érvénytelen adatok", { type: "error" });
+                break;
+            case 403:
+                notify("Nincs jogosultságod a művelet végrehajtásához", { type: "error" });
+                break;
+            case 500:
+                notify("Hiba történt a művelet során", { type: "error" });
+                break;
+            default:
+                notify("Ismeretlen hiba történt", { type: "error" });
+        }
+    }
+
+    const handleUnbanUser = async (memberId: number) => {
+        const response = await fetch(`/api/courses/${courseId}/members/unban`, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+                userId: memberId,
+            })
+        });
+
+        if(!response.ok) {
+            notify("Hiba történt a művelet során", { type: "error" });
+            return;
+        }
+
+        switch(response.status) {
+            case 200:
+                notify("Sikeres visszaállítás", { type: "success" });
+                setCourse((prevCourse) => {
+                    if (!prevCourse) return prevCourse;
+
+                    const updatedMembers = prevCourse.members.filter((member) => member.user.id !== memberId);
+                    regroupMembers(updatedMembers);
+                    return { ...prevCourse, members: updatedMembers };
+                });
+
+                break;
+            case 400:
+                notify("Érvénytelen adatok", { type: "error" });
+                break;
+            case 403:
+                notify("Nincs jogosultságod a művelet végrehajtásához", { type: "error" });
+                break;
+            case 500:
+                notify("Hiba történt a művelet során", { type: "error" });
+                break;
+            default:
+                notify("Ismeretlen hiba történt", { type: "error" });
+        }
     }
 
     const tabs = [
@@ -611,9 +759,27 @@ export default function CoursePage({ params }: { params: Promise<{ courseId: str
                             </CardHeader>
                             <CardContent>
                                 {teachers.map((teacher: CourseMember, index: number) => (
-                                    <div key={`teacher-${teacher.user.id}-${index}`} className="flex items-center space-x-4 mb-4 bg-card-foreground/10 p-2 rounded-lg">
-                                        <UserAvatar user={teacher.user} size="large"/>
-                                        <h1>{teacher.user.first_name} {teacher.user.last_name}</h1>
+                                    <div key={`teacher-${teacher.user.id}-${index}`} className="flex items-center space-x-4 mb-4 bg-card-foreground/10 p-2 rounded-lg justify-between">
+                                        <div className="flex items-center gap-4">
+                                            <UserAvatar user={teacher.user} size="large"/>
+                                            <h1>{teacher.user.first_name} {teacher.user.last_name}</h1>
+                                        </div>
+                                        {isUserTeacher && teacher.user.id !== session?.user?.id && (
+                                        <div>
+                                            <DropdownMenu>
+                                                <DropdownMenuTrigger asChild>
+                                                    <Button variant="outline" size="icon">
+                                                        <MoreVertical className="h-4 w-4" />
+                                                    </Button>
+                                                </DropdownMenuTrigger>
+                                                <DropdownMenuContent align="end">
+                                                    <DropdownMenuItem onSelect={() => handleMemberDemoteToStudent(teacher.user.id)}>
+                                                        Tanulóvá fokozás
+                                                    </DropdownMenuItem>
+                                                </DropdownMenuContent>
+                                            </DropdownMenu>
+                                        </div>
+                                        )}
                                     </div>
                                 ))}
                             </CardContent>
@@ -628,19 +794,20 @@ export default function CoursePage({ params }: { params: Promise<{ courseId: str
                             </CardHeader>
                             <CardContent>
                                 {students.map((student: CourseMember, index: number) => (
-                                    <div key={`student-${student.user.id}-${index}`} className="flex items-center space-x-4 mb-4 bg-card-foreground/10 p-2 rounded-lg">
+                                    <div key={`student-${student.user.id}-${index}`} className="flex items-center space-x-4 mb-4 bg-card-foreground/10 p-2 rounded-lg justify-between">
                                         <div className="flex items-center gap-4">
                                             <UserAvatar user={student.user} size="large" />
                                             <h1>{student.user.first_name} {student.user.last_name}</h1>
                                         </div>
+                                        {isUserTeacher && (
                                         <div>
                                             <DropdownMenu>
                                                 <DropdownMenuTrigger asChild>
                                                     <Button variant="outline" size="icon">
-                                                        <Eye className="h-4 w-4" />
+                                                        <MoreVertical className="h-4 w-4" />
                                                     </Button>
                                                 </DropdownMenuTrigger>
-                                                <DropdownMenuContent>
+                                                <DropdownMenuContent align="end">
                                                     <DropdownMenuItem onSelect={() => handleMemberPromoteToTeacher(student.user.id)}>
                                                         Fokozás tanárrá
                                                     </DropdownMenuItem>
@@ -650,6 +817,7 @@ export default function CoursePage({ params }: { params: Promise<{ courseId: str
                                                 </DropdownMenuContent>
                                             </DropdownMenu>
                                         </div>
+                                        )}
                                     </div>
                                 ))}
                             </CardContent>
@@ -689,10 +857,15 @@ export default function CoursePage({ params }: { params: Promise<{ courseId: str
                             </CardHeader>
                             <CardContent>
                                 {bannedUsers.map((student: CourseMember, index: number) => (
-                                    <div key={`banned-student-${student.user.id}-${index}`} className="flex items-center justify-between space-x-4 mb-4 bg-card-foreground/10 p-2 rounded-lg">
+                                    <div key={`banned-student-${student.user.id}-${index}`} className="flex items-center justify-between space-x-4 mb-4 bg-card-foreground/10 p-2 rounded-lg justify-between">
                                         <div className="flex items-center gap-4">
                                             <UserAvatar user={student.user} size="large" />
                                             <h1>{student.user.first_name} {student.user.last_name}</h1>
+                                        </div>
+                                        <div>
+                                            <Button variant="outline" onClick={(e) => handleUnbanUser(student.user.id)}>
+                                                Feloldás
+                                            </Button>
                                         </div>
                                     </div>
                                 ))}

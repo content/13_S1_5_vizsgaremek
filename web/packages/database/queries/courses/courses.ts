@@ -1,7 +1,7 @@
 import { Attachment, Course, CourseMember, CourseSettings, PostType } from "@studify/types";
 import { generateColorFromInvitationCode } from '../../../../apps/next/lib/dashboard/utils';
 import { getDominantColor } from '../../lib/image-utils';
-import { and, eq } from 'drizzle-orm';
+import { and, eq, is } from 'drizzle-orm';
 import { db } from "../../mysql";
 import { backgroundAttachments, courses, coursesMembers } from '../../schema/courses';
 import { getCourseBackgroundImage } from '../attachments/attachments';
@@ -178,6 +178,7 @@ export async function getCourseMembers(courseId: number): Promise<CourseMember[]
             userId: coursesMembers.userId,
             isTeacher: coursesMembers.isTeacher,
             isApproved: coursesMembers.isApproved,
+            isBanned: coursesMembers.isBanned,
         })
         .from(coursesMembers)
         .where(eq(coursesMembers.courseId, courseId))
@@ -190,6 +191,7 @@ export async function getCourseMembers(courseId: number): Promise<CourseMember[]
             user: userResult,
             isTeacher: member.isTeacher,
             isApproved: member.isApproved,
+            isBanned: member.isBanned
         }
     })) as unknown as CourseMember[];
 }
@@ -441,10 +443,24 @@ export async function kickMember(courseId: number, userId: number): Promise<bool
     const result = await db
         .update(coursesMembers)
         .set({
+            isApproved: false,
+            isTeacher: false,
             isBanned: true
         })
         .where(and(eq(coursesMembers.courseId, courseId), eq(coursesMembers.userId, userId)))
         .execute();
 
+    return result[0].affectedRows > 0;
+}
+
+export async function unbanMember(courseId: number, userId: number): Promise<boolean> {
+    const result = await db
+        .update(coursesMembers)
+        .set({
+            isBanned: false
+        })
+        .where(and(eq(coursesMembers.courseId, courseId), eq(coursesMembers.userId, userId)))
+        .execute();
+    
     return result[0].affectedRows > 0;
 }
