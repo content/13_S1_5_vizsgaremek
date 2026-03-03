@@ -94,7 +94,7 @@ export async function getCoursesByUserId(userId: number): Promise<Course[]> {
         .where(and(eq(coursesMembers.userId, userId), eq(coursesMembers.isApproved, true)))
         .execute();
     
-    const coursesList = coursez.map((result: any) => result.courses);
+    const coursesList = coursez.map((result: any) => result.courses).filter((course: any) => !course.isBanned);
 
     return await Promise.all(coursesList.map(async (course: any) => {
         let members = await getCourseMembers(course.id);
@@ -103,7 +103,7 @@ export async function getCoursesByUserId(userId: number): Promise<Course[]> {
 
         const isUserTeacher = members.find(member => member.user?.id === userId)?.isTeacher || false;
         if(!isUserTeacher) {
-            members = members.filter(member => member.isApproved);
+            members = members.filter(member => member.isApproved && !member.isBanned);
         }
 
         let settingsObj = course.settings;
@@ -161,6 +161,14 @@ export async function updateSettings(courseId: number, settings: SettingsProp): 
         .where(eq(courses.id, courseId))
         .execute();
 
+    if(settings.autoApproveMembers) {
+        await approvePendingUsers(courseId); 
+    }
+
+    if(settings.autoRejectMembers) {
+        await declinePendingUsers(courseId);
+    }
+    
     return result[0].affectedRows > 0;
 }
 
@@ -349,6 +357,27 @@ export async function leaveCourse(userId: number, courseId: number): Promise<boo
     const result = await db
         .delete(coursesMembers)
         .where(and(eq(coursesMembers.courseId, courseId), eq(coursesMembers.userId, userId)))
+        .execute();
+
+    return result[0].affectedRows > 0;
+}
+
+export async function declinePendingUsers(courseId: number): Promise<boolean> {
+    const result = await db
+        .delete(coursesMembers)
+        .where(and(eq(coursesMembers.courseId, courseId), eq(coursesMembers.isApproved, false)))
+        .execute();
+
+    return result[0].affectedRows > 0;
+}
+
+export async function approvePendingUsers(courseId: number): Promise<boolean> {
+    const result = await db
+        .update(coursesMembers)
+        .set({
+            isApproved: true
+        })
+        .where(and(eq(coursesMembers.courseId, courseId), eq(coursesMembers.isApproved, false)))
         .execute();
 
     return result[0].affectedRows > 0;

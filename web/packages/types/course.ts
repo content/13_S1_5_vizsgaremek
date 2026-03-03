@@ -6,6 +6,7 @@ export interface CourseMember {
     user: User; 
     isTeacher: boolean;
     isApproved: boolean;
+    isBanned: boolean;
 }
 
 export interface Course {

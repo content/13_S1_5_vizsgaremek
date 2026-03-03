@@ -37,7 +37,6 @@ export async function POST(request: NextRequest, { params }: { params: { id: str
     try {
         const body = await request.json();
         
-        // Extract permission-related fields
         const permissionUpdates: Partial<CoursePermissions> = {
             allowComments: body.allowComments,
             showInviteCode: body.showInviteCode,
@@ -47,7 +46,6 @@ export async function POST(request: NextRequest, { params }: { params: { id: str
             allowedStudentPostTypes: body.allowedStudentPostTypes || [],
         };
 
-        // Validate permissions
         const validation = validatePermissions(permissionUpdates);
         if (!validation.valid) {
             return NextResponse.json(

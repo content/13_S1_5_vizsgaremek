@@ -1,7 +1,7 @@
 "use client";
 
 
-import { format } from "date-fns";
+import { format, set } from "date-fns";
 
 import { Button } from "@/components/ui/button";
 import { ChevronDownIcon, Clock2Icon, File, Pencil, Plus, Trash2 } from "lucide-react";
@@ -15,7 +15,7 @@ import { Field, FieldGroup, FieldLabel } from "@/components/ui/field";
 import { UploadDropzone } from "@/components/uploadthing/uploadthing";
 import { useNotificationProvider } from "@/components/notification-provider";
 import { useSession } from "next-auth/react";
-import { Post } from "@studify/types";
+import { Course, Post, PostType } from "@studify/types";
 import AttachmentUploadCard from "../attachments/attachment-upload-card";
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import { InputOTPGroup } from "@/components/ui/input-otp";
@@ -38,13 +38,15 @@ const postTypeMappings: { [key: string]: string } = {
 };
 
 type newPostDialogProps = {
-    courseId: number;
+    course: Course;
     onNewPostCreated?: (post: Post) => void;
 };
 
-export default function NewPostDialog({ courseId, onNewPostCreated }: newPostDialogProps) {    
-    const { data: session } = useSession();
+export default function NewPostDialog({ course, onNewPostCreated }: newPostDialogProps) {    
+    const { data: session, status } = useSession();
     const { notify } = useNotificationProvider();
+
+    const [allowedPostTypes, setAllowedPostTypes] = useState<PostType[] | null>(null);
 
     const [newPostModalOpen, setNewPostModalOpen] = useState<boolean>(false);
     const [currNewPostModalPage, setCurrentNewPostModalPage] = useState<string>(newPostModalPages[0]);
@@ -116,7 +118,7 @@ export default function NewPostDialog({ courseId, onNewPostCreated }: newPostDia
                 },
                 body: JSON.stringify({
                     userId: session.user.id,
-                    courseId: courseId,
+                    courseId: course.id,
                     postTypeId: selectedPostTypeId,
                     name: newPostName,
                     description: newPostDescription,
@@ -184,23 +186,31 @@ export default function NewPostDialog({ courseId, onNewPostCreated }: newPostDia
     }, [selectedPostTypeId, postTypes]);
 
     useEffect(() => {
+        if(status === "loading") return;
+        if(!session || !session.user) return;
+        if(!course || !course.members) return;
+        if(!postTypes || postTypes.length === 0) return;
+
+        const isTeacher = course.members.some(member => member.user.id === session.user?.id && member.isTeacher);
+        
+        setAllowedPostTypes(isTeacher ? postTypes as PostType[] : course.settings.allowedStudentPostTypes);
+    }, [session, status, course, postTypes]);
+
+    useEffect(() => {
         const isPollSelected = selectedPostType === "POLL";
         const isAnnouncementSelected = selectedPostType === "ANNOUNCEMENT";
         const isResourceSelected = selectedPostType === "RESOURCE";
 
-        // Post details page
         if(currNewPostModalPage === newPostModalPages[0]) {
             setPrevNewPostModalPage(null);
             setNextNewPostModalPage(newPostModalPages[isAnnouncementSelected || isResourceSelected ? 3 : 1]);
         }
 
-        // General settings page
         if(currNewPostModalPage === newPostModalPages[1]) {
             setPrevNewPostModalPage(newPostModalPages[0]);
             setNextNewPostModalPage(newPostModalPages[isPollSelected ? 2 : 3]);
         }
         
-        // Poll page
         if(currNewPostModalPage === newPostModalPages[2]) {
             if(pollOptions.length < MIN_POLL_OPTIONS) {
                 setPollOptions(prev => {
@@ -215,7 +225,6 @@ export default function NewPostDialog({ courseId, onNewPostCreated }: newPostDia
             setNextNewPostModalPage(newPostModalPages[3]);
         }
 
-        // Attachments page
         if(currNewPostModalPage === newPostModalPages[3]) {
             setPrevNewPostModalPage(newPostModalPages[isAnnouncementSelected || isResourceSelected ? 0 : isPollSelected ? 2 : 1]);
             setNextNewPostModalPage(null);
@@ -281,7 +290,7 @@ export default function NewPostDialog({ courseId, onNewPostCreated }: newPostDia
                                 value={selectedPostTypeId}
                                 onChange={(e) => setSelectedPostTypeId(+e.target.value)}
                             >
-                                {postTypes.map((type) => (
+                                {allowedPostTypes && allowedPostTypes.map((type) => (
                                     <option key={`POST_TYPE_ID_${type.id}`} value={type.id}>
                                         {postTypeMappings[type.name] || type.name}
                                     </option>

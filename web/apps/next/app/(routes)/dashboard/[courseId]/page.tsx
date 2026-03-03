@@ -68,8 +68,11 @@ export default function CoursePage({ params }: { params: Promise<{ courseId: str
 
     const [isUserTeacher, setIsUserTeacher] = useState<boolean>(false);
     const [course, setCourse] = useState<Course | null>(null);
+    
     const [teachers, setTeachers] = useState<CourseMember[]>([]);
     const [students, setStudents] = useState<CourseMember[]>([]);
+    const [bannedUsers, setBannedUsers] = useState<CourseMember[]>([]);
+    
     const [unverifiedStudents, setUnverifiedStudents] = useState<CourseMember[]>([]);
     const [postTypes, setPostTypes] = useState<{ id: number; name: string }[]>([]);
 
@@ -95,9 +98,11 @@ export default function CoursePage({ params }: { params: Promise<{ courseId: str
         const nextTeachers = members.filter((member) => member.isTeacher);
         const nextStudents = members.filter((member) => !member.isTeacher && member.isApproved);
         const nextUnverifiedStudents = members.filter((member) => !member.isTeacher && !member.isApproved);
+        const nextBannedUsers = members.filter((member) => member.isBanned);
 
         setTeachers(nextTeachers);
         setStudents(nextStudents);
+        setBannedUsers(nextBannedUsers);
         setUnverifiedStudents(nextUnverifiedStudents);
         setTeacherNames(nextTeachers.map((teacher) => `${teacher.user.first_name} ${teacher.user.last_name}`));
     };
@@ -306,10 +311,14 @@ export default function CoursePage({ params }: { params: Promise<{ courseId: str
         const teachers = tmpCourse.members.filter((member: any) => member.isTeacher);
         const students = tmpCourse.members.filter((member: any) => !member.isTeacher && member.isApproved);
         const unverifiedStudents = tmpCourse.members.filter((member: any) => !member.isTeacher && !member.isApproved);
+        const bannedUsers = tmpCourse.members.filter((member: any) => member.isBanned);
 
         setCourse(tmpCourse);
+        
         setTeachers(teachers);
         setStudents(students);
+        setBannedUsers(bannedUsers);
+
         setColor(tmpCourse.color);
         setUnverifiedStudents(unverifiedStudents);
 
@@ -475,14 +484,25 @@ export default function CoursePage({ params }: { params: Promise<{ courseId: str
                 {activeTab === "stream" && (
                     <div className="grid grid-cols-1 lg:grid-cols-[1fr_2fr] xl:grid-cols-[1fr_4fr] gap-6">
                         <div className="flex flex-col gap-4">
-                            <Card>
-                                <div className="p-4">
-                                    <p>Kurzus kód:</p>
-                                    <h2 className="font-mono font-bold text-lg select-all">{course.invitationCode}</h2>
+                            
+                                <Card>
+                                <div className="p-4 flex flex-col gap-4 items-center justify-center">
+                                    {course.invitationCode ? (
+                                        <div>
+                                            <p>Kurzus kód:</p>
+                                            <h2 className="font-mono font-bold text-lg select-all">{course.invitationCode}</h2>
+                                        </div>
+                                    ) : (
+                                        <div className="flex flex-col items-center gap-2 text-center">
+                                            <p>A meghívókód el van rejtve.</p>
+                                        </div>
+                                    )}
                                 </div>
                             </Card>
-                            {isUserTeacher && (
-                                <NewPostDialog courseId={course.id} onNewPostCreated={(post: Post) => {
+                            
+                            
+                            {(isUserTeacher || settings?.studentsCanCreatePosts) && (
+                                <NewPostDialog course={course} onNewPostCreated={(post: Post) => {
                                     setCourse((prevCourse: Course | null) => {
                                         if (!prevCourse) return prevCourse;
 
