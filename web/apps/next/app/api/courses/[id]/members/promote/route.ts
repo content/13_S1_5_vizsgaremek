@@ -1,8 +1,9 @@
 import { authConfig } from "@/app/auth";
-import { promoteMember } from "@studify/database";
+import { promoteMember, getCourseById } from "@studify/database";
 import { CourseMember } from "@studify/types";
 import { getServerSession } from "next-auth";
 import { NextResponse } from "next/server";
+import { fireWebsocketEvent } from "@/lib/websocket/websocket";
 
 export async function POST(request: Request, { params }: { params: { id: string } }) {
     const session = await getServerSession(authConfig);
@@ -44,6 +45,15 @@ export async function POST(request: Request, { params }: { params: { id: string 
 
     if(!success) {
         return NextResponse.json({ error: 'Failed to promote member' }, { status: 500 });
+    }
+
+    // Fire websocket event for member promotion
+    const updatedCourse = await getCourseById(courseId);
+    if (updatedCourse) {
+        const promotedMember = updatedCourse.members.find(m => m.user.id === userId);
+        if (promotedMember) {
+            await fireWebsocketEvent("course-member-promoted", { course: updatedCourse, member: promotedMember });
+        }
     }
 
     return NextResponse.json({ success: true });

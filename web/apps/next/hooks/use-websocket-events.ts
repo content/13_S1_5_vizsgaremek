@@ -247,3 +247,88 @@ export const useSubmissionEvents = (callbacks: {
     if (callbacks.onGraded) useSubmissionGraded(callbacks.onGraded);
     if (callbacks.onEdited) useSubmissionEdited(callbacks.onEdited);
 };
+
+/**
+ * Listen for comment created events
+ * @param onEvent Callback function to handle the event
+ * @param deps Dependency array for the callback
+ */
+export const useCommentCreated = (
+    onEvent: (data: { comment: any; post: any; courseId: number }) => void,
+    deps: any[] = []
+) => {
+    const { onCommentCreated } = useSocket();
+
+    useEffect(() => {
+        const unsubscribe = onCommentCreated(onEvent);
+        return unsubscribe;
+    }, [onCommentCreated, ...deps]);
+};
+
+/**
+ * Listen for private message events
+ * @param onEvent Callback function to handle the event
+ * @param deps Dependency array for the callback
+ */
+export const usePrivateMessage = (
+    onEvent: (data: { message: any; senderId: number; recipientId: number }) => void,
+    deps: any[] = []
+) => {
+    const { onPrivateMessage } = useSocket();
+
+    useEffect(() => {
+        const unsubscribe = onPrivateMessage(onEvent);
+        return unsubscribe;
+    }, [onPrivateMessage, ...deps]);
+};
+
+/**
+ * Listen for course settings updated events
+ * @param onEvent Callback function to handle the event
+ * @param deps Dependency array for the callback
+ */
+export const useCourseSettingsUpdated = (
+    onEvent: (data: { course: any; settings: any }) => void,
+    deps: any[] = []
+) => {
+    const { onCourseSettingsUpdated } = useSocket();
+
+    useEffect(() => {
+        const unsubscribe = onCourseSettingsUpdated(onEvent);
+        return unsubscribe;
+    }, [onCourseSettingsUpdated, ...deps]);
+};
+
+/**
+ * Listen for course member promoted events
+ * @param onEvent Callback function to handle the event
+ * @param deps Dependency array for the callback
+ */
+export const useCourseMemberPromoted = (
+    onEvent: (data: { course: any; member: any }) => void,
+    deps: any[] = []
+) => {
+    const { onCourseMemberPromoted } = useSocket();
+
+    useEffect(() => {
+        const unsubscribe = onCourseMemberPromoted(onEvent);
+        return unsubscribe;
+    }, [onCourseMemberPromoted, ...deps]);
+};
+
+/**
+ * Listen for course member demoted events
+ * @param onEvent Callback function to handle the event
+ * @param deps Dependency array for the callback
+ */
+export const useCourseMemberDemoted = (
+    onEvent: (data: { course: any; member: any }) => void,
+    deps: any[] = []
+) => {
+    const { onCourseMemberDemoted } = useSocket();
+
+    useEffect(() => {
+        const unsubscribe = onCourseMemberDemoted(onEvent);
+        return unsubscribe;
+    }, [onCourseMemberDemoted, ...deps]);
+};

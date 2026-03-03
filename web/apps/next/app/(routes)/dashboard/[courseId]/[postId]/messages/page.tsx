@@ -13,6 +13,7 @@ import { redirect } from "next/navigation";
 import React, { useEffect, useState } from "react";
 import { getRelativeTime } from "@/lib/time/utils";
 import Chat from "@/components/elements/posts/messages/chat";
+import { usePrivateMessage } from "@/hooks/use-websocket-events";
 
 type TeacherConversation = { student: User; messages: Message[] };
 
@@ -145,6 +146,20 @@ export default function MessagesPage({ params }: { params: Promise<{ courseId: s
         setPost(tmpPost);
     }, [session, status]);
 
+    usePrivateMessage((payload) => {
+        setConversations((prevConversations) => {
+            return prevConversations.map((conversation) => {
+                if (conversation.student.id === payload.senderId || conversation.student.id === payload.recipientId) {
+                    return {
+                        ...conversation,
+                        messages: [...conversation.messages, normalizeMessage(payload.message)],
+                    };
+                }
+                return conversation;
+            });
+        });
+    }, []);
+
     const tabs = [
         { id: "course", label: "Vissza a kurzushoz", icon: Home, href: `/dashboard/${courseId}` },
         { id: "task", label: "Vissza a feladathoz", icon: NotebookText, href: `/dashboard/${courseId}/${postId}` },
@@ -247,7 +262,7 @@ export default function MessagesPage({ params }: { params: Promise<{ courseId: s
                                                 </h3>
                                             </div>
 
-                                            <Chat 
+                                            <Chat
                                                 key={`${selectedConversation.student.id}_CONVERSATION`} 
                                                 messages={selectedConversationMessages} 
                                                 sender={session.user as unknown as User}

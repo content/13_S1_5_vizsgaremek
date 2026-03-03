@@ -5,6 +5,7 @@ import { updateSettings } from "@studify/database";
 import { Course, CourseMember } from "@studify/types";
 import { getServerSession } from "next-auth";
 import { NextRequest, NextResponse } from "next/server";
+import { fireWebsocketEvent } from "@/lib/websocket/websocket";
 
 export async function POST(request: NextRequest, { params }: { params: { id: string } }) {
     const session = await getServerSession(authConfig);
@@ -68,6 +69,9 @@ export async function POST(request: NextRequest, { params }: { params: { id: str
         if (updatedCourse) {
             (updatedCourse as any).settings = mergedPermissions;
         }
+
+        // Fire websocket event for course settings update
+        await fireWebsocketEvent("course-settings-updated", { course, settings: mergedPermissions });
 
         return NextResponse.json(
             {

@@ -8,7 +8,7 @@ import { useNotificationProvider } from './notification-provider';
 import { Course, CourseMember, Post, Submission } from '@studify/types';
 import { useRouter } from 'next/navigation';
 import { useSession } from 'next-auth/react';
-import { Users, FileText, CheckCircle, XCircle, UserPlus, UserMinus, BookOpen, GraduationCap } from 'lucide-react';
+import { Users, FileText, CheckCircle, XCircle, UserPlus, UserMinus, BookOpen, GraduationCap, MessageCircle, Settings, Shield } from 'lucide-react';
 
 // Event payload types
 interface CourseCreatedEvent {
@@ -42,6 +42,33 @@ interface SubmissionEvent {
     courseId: number;
 }
 
+interface CommentCreatedEvent {
+    comment: any;
+    post: Post;
+    courseId: number;
+}
+
+interface PrivateMessageEvent {
+    message: any;
+    senderId: number;
+    recipientId: number;
+}
+
+interface CourseSettingsUpdatedEvent {
+    course: Course;
+    settings: any;
+}
+
+interface CourseMemberPromotedEvent {
+    course: Course;
+    member: CourseMember;
+}
+
+interface CourseMemberDemotedEvent {
+    course: Course;
+    member: CourseMember;
+}
+
 type SocketProviderProps = {
     socket: Socket<DefaultEventsMap, DefaultEventsMap> | undefined;
     isConnected: boolean;
@@ -62,6 +89,11 @@ type SocketProviderProps = {
     onSubmissionUnsubmitted: (callback: (data: SubmissionEvent) => void) => () => void;
     onSubmissionGraded: (callback: (data: SubmissionEvent) => void) => () => void;
     onSubmissionEdited: (callback: (data: SubmissionEvent) => void) => () => void;
+    onCommentCreated: (callback: (data: CommentCreatedEvent) => void) => () => void;
+    onPrivateMessage: (callback: (data: PrivateMessageEvent) => void) => () => void;
+    onCourseSettingsUpdated: (callback: (data: CourseSettingsUpdatedEvent) => void) => () => void;
+    onCourseMemberPromoted: (callback: (data: CourseMemberPromotedEvent) => void) => () => void;
+    onCourseMemberDemoted: (callback: (data: CourseMemberDemotedEvent) => void) => () => void;
 };
 
 const SocketProviderCtx = createContext<SocketProviderProps>({} as SocketProviderProps);
@@ -248,6 +280,75 @@ export const SocketProvider = ({ children }: { children: React.ReactNode }) => {
         }
     }, [notify, router, currentUserId]);
 
+    // Comment event handlers
+    const handleCommentCreated = useCallback((data: CommentCreatedEvent) => {
+        console.log('Comment created:', data);
+        notify('New comment added!', { 
+            type: 'info', 
+            icon: MessageCircle,
+            description: data.post?.name 
+        });
+        router.refresh();
+    }, [notify, router]);
+
+    // Private message event handlers
+    const handlePrivateMessage = useCallback((data: PrivateMessageEvent) => {
+        console.log('Private message received:', data);
+        notify('New message received!', { 
+            type: 'info', 
+            icon: MessageCircle 
+        });
+    }, [notify]);
+
+    // Course settings event handlers
+    const handleCourseSettingsUpdated = useCallback((data: CourseSettingsUpdatedEvent) => {
+        console.log('Course settings updated:', data);
+        notify('Course settings have been updated', { 
+            type: 'info', 
+            icon: Settings,
+            description: data.course?.name 
+        });
+        router.refresh();
+    }, [notify, router]);
+
+    // Course member promotion event handlers
+    const handleCourseMemberPromoted = useCallback((data: CourseMemberPromotedEvent) => {
+        console.log('Member promoted:', data);
+        if (data.member?.user?.id === currentUserId) {
+            notify('You have been promoted to teacher!', { 
+                type: 'success', 
+                icon: Shield,
+                description: data.course?.name 
+            });
+        } else {
+            const userName = data.member?.user ? `${data.member.user.first_name} ${data.member.user.last_name}` : 'A member';
+            notify(`${userName} was promoted to teacher`, { 
+                type: 'info', 
+                icon: Shield 
+            });
+        }
+        router.refresh();
+    }, [notify, router, currentUserId]);
+
+    // Course member demotion event handlers
+    const handleCourseMemberDemoted = useCallback((data: CourseMemberDemotedEvent) => {
+        console.log('Member demoted:', data);
+        if (data.member?.user?.id === currentUserId) {
+            notify('You have been demoted to student', { 
+                type: 'warning', 
+                icon: Shield,
+                description: data.course?.name 
+            });
+        } else {
+            const userName = data.member?.user ? `${data.member.user.first_name} ${data.member.user.last_name}` : 'A member';
+            notify(`${userName} was demoted to student`, { 
+                type: 'info', 
+                icon: Shield 
+            });
+        }
+        router.refresh();
+    }, [notify, router, currentUserId]);
+
     // Setup event listeners
     useEffect(() => {
         if (socket.connected && !isConnected) {
@@ -268,6 +369,17 @@ export const SocketProvider = ({ children }: { children: React.ReactNode }) => {
 
         // Post events
         socket.on('new-post', handleNewPost);
+        socket.on('comment-created', handleCommentCreated);
+
+        // Message events
+        socket.on('private-message', handlePrivateMessage);
+
+        // Course settings events
+        socket.on('course-settings-updated', handleCourseSettingsUpdated);
+
+        // Course member events
+        socket.on('course-member-promoted', handleCourseMemberPromoted);
+        socket.on('course-member-demoted', handleCourseMemberDemoted);
 
         // Submission events
         socket.on('submission-created', handleSubmissionCreated);
@@ -286,6 +398,11 @@ export const SocketProvider = ({ children }: { children: React.ReactNode }) => {
             socket.off('course-member-declined', handleCourseMemberDeclined);
             socket.off('course-deleted', handleCourseDeleted);
             socket.off('new-post', handleNewPost);
+            socket.off('comment-created', handleCommentCreated);
+            socket.off('private-message', handlePrivateMessage);
+            socket.off('course-settings-updated', handleCourseSettingsUpdated);
+            socket.off('course-member-promoted', handleCourseMemberPromoted);
+            socket.off('course-member-demoted', handleCourseMemberDemoted);
             socket.off('submission-created', handleSubmissionCreated);
             socket.off('submission-submitted', handleSubmissionSubmitted);
             socket.off('submission-unsubmitted', handleSubmissionUnsubmitted);
@@ -303,6 +420,11 @@ export const SocketProvider = ({ children }: { children: React.ReactNode }) => {
         handleCourseMemberDeclined,
         handleCourseDeleted,
         handleNewPost,
+        handleCommentCreated,
+        handlePrivateMessage,
+        handleCourseSettingsUpdated,
+        handleCourseMemberPromoted,
+        handleCourseMemberDemoted,
         handleSubmissionCreated,
         handleSubmissionSubmitted,
         handleSubmissionUnsubmitted,
@@ -371,6 +493,31 @@ export const SocketProvider = ({ children }: { children: React.ReactNode }) => {
         return () => socket.off('submission-edited', callback);
     }, []);
 
+    const onCommentCreated = useCallback((callback: (data: CommentCreatedEvent) => void) => {
+        socket.on('comment-created', callback);
+        return () => socket.off('comment-created', callback);
+    }, []);
+
+    const onPrivateMessage = useCallback((callback: (data: PrivateMessageEvent) => void) => {
+        socket.on('private-message', callback);
+        return () => socket.off('private-message', callback);
+    }, []);
+
+    const onCourseSettingsUpdated = useCallback((callback: (data: CourseSettingsUpdatedEvent) => void) => {
+        socket.on('course-settings-updated', callback);
+        return () => socket.off('course-settings-updated', callback);
+    }, []);
+
+    const onCourseMemberPromoted = useCallback((callback: (data: CourseMemberPromotedEvent) => void) => {
+        socket.on('course-member-promoted', callback);
+        return () => socket.off('course-member-promoted', callback);
+    }, []);
+
+    const onCourseMemberDemoted = useCallback((callback: (data: CourseMemberDemotedEvent) => void) => {
+        socket.on('course-member-demoted', callback);
+        return () => socket.off('course-member-demoted', callback);
+    }, []);
+
     return (
         <SocketProviderCtx.Provider
             value={{
@@ -391,6 +538,11 @@ export const SocketProvider = ({ children }: { children: React.ReactNode }) => {
                 onSubmissionUnsubmitted,
                 onSubmissionGraded,
                 onSubmissionEdited,
+                onCommentCreated,
+                onPrivateMessage,
+                onCourseSettingsUpdated,
+                onCourseMemberPromoted,
+                onCourseMemberDemoted,
             }}
         >
             {children}

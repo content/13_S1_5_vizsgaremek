@@ -32,6 +32,9 @@ import {
     useCourseMemberJoin,
     useCourseMemberLeave,
     useNewPost,
+    useCourseSettingsUpdated,
+    useCourseMemberPromoted,
+    useCourseMemberDemoted,
 } from "@/hooks/use-websocket-events";
 import postTypeMappings from "@/lib/dashboard/postTypeMappings";
 import { Post, Submission } from "@studify/types";
@@ -191,6 +194,53 @@ export default function CoursePage({ params }: { params: Promise<{ courseId: str
         router.push("/dashboard");
     }, [course?.id, notify, router]);
 
+    useCourseSettingsUpdated((payload) => {
+        if (!course || payload.course.id !== course.id) return;
+
+        setCourse((prevCourse) => {
+            if (!prevCourse) return prevCourse;
+
+            return {
+                ...prevCourse,
+                settings: payload.settings,
+            };
+        });
+
+        setSettings(payload.settings);
+    }, [course?.id]);
+
+    useCourseMemberPromoted((payload) => {
+        if (!course || payload.course.id !== course.id) return;
+
+        setCourse((prevCourse) => {
+            if (!prevCourse) return prevCourse;
+
+            const updatedMembers = prevCourse.members.map((member) =>
+                member.user.id === payload.member.user.id ? { ...member, isTeacher: true } : member
+            );
+
+            regroupMembers(updatedMembers);
+
+            return { ...prevCourse, members: updatedMembers };
+        });
+    }, [course?.id]);
+
+    useCourseMemberDemoted((payload) => {
+        if (!course || payload.course.id !== course.id) return;
+
+        setCourse((prevCourse) => {
+            if (!prevCourse) return prevCourse;
+
+            const updatedMembers = prevCourse.members.map((member) =>
+                member.user.id === payload.member.user.id ? { ...member, isTeacher: false } : member
+            );
+
+            regroupMembers(updatedMembers);
+
+            return { ...prevCourse, members: updatedMembers };
+        });
+    }, [course?.id]);
+
     const handleDeclineStudent = async (studentId: number) => {
         const response = await fetch(`/api/courses/${courseId}/members/decline`, {
             method: 'POST',
@@ -314,9 +364,6 @@ export default function CoursePage({ params }: { params: Promise<{ courseId: str
         const bannedUsers = tmpCourse.members.filter((member: any) => member.isBanned);
 
         setCourse(tmpCourse);
-        
-        console.log(session.user);
-        console.log(teachers, students, bannedUsers, unverifiedStudents);
 
         setTeachers(teachers);
         setStudents(students);

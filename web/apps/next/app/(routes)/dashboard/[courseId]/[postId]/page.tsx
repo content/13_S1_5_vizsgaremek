@@ -19,6 +19,7 @@ import {
     useSubmissionGraded,
     useSubmissionSubmitted,
     useSubmissionUnsubmitted,
+    useCommentCreated,
 } from "@/hooks/use-websocket-events";
 import { formatInTimeZone } from 'date-fns-tz';
 import { Home } from "lucide-react";
@@ -101,6 +102,20 @@ export default function PostPage({ params }: { params: Promise<{ courseId: strin
         notify("Eltávolítottak a kurzusból.", { type: "warning" });
         router.push("/dashboard");
     }, [courseId, session?.user?.id, notify, router]);
+
+    useCommentCreated((payload) => {
+        if (+payload.post.id !== +postId) return;
+        setPost((prevPost) => {
+            if (!prevPost) return prevPost;
+            if (!prevPost.comments) prevPost.comments = [];
+
+            const existingIndex = prevPost.comments.findIndex((comment) => comment.id === payload.comment.id);
+            if (existingIndex === -1) {
+                return { ...prevPost, comments: [...prevPost.comments, payload.comment] };
+            }
+            return prevPost;
+        });
+    }, [postId]);
 
     useCourseDeleted((payload) => {
         if (+payload.courseId !== +courseId) return;

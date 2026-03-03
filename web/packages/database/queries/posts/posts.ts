@@ -387,16 +387,17 @@ export async function getConversationByPostIdAndUserId(postId: number, senderId:
     return messages;
 }
 
-export async function sendMessageToPostConversation(postId: number, senderId: number, content: string): Promise<Message | null> {
+export async function sendMessageToPostConversation(postId: number, senderId: number, content: string, recipientId?: number): Promise<Message | null> {
     const post = await getPostById(postId);
 
     if(!post) {
         return null;
     }
 
-    const recipientId = post.author.id === senderId ? null : post.author.id;
-    if(!recipientId) {
-        return null;
+    let receiptment = recipientId;
+
+    if(!receiptment && post.author.id !== senderId) {
+        receiptment = post.author.id;
     }
 
     const result = await db
@@ -404,7 +405,7 @@ export async function sendMessageToPostConversation(postId: number, senderId: nu
         .values({
             postId: postId,
             senderId: senderId,
-            recipientId: recipientId,
+            recipientId: receiptment!,
             message: content,
         })
         .execute();
@@ -418,7 +419,7 @@ export async function sendMessageToPostConversation(postId: number, senderId: nu
     return {
         id: messageId,
         sender: await getUserByIdWithoutCourses(senderId) as User,
-        recipient: await getUserByIdWithoutCourses(recipientId) as User,
+        recipient: await getUserByIdWithoutCourses(receiptment!) as User,
         content: content,
         createdAt: new Date(),
     } as Message;

@@ -66,7 +66,7 @@ export default function Chat({ post, sender, receiver, messages }: ChatProps) {
             const response = await fetch(`/api/posts/${post.id}/messages/send`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ content: trimmed }),
+                body: JSON.stringify({ content: trimmed, recipientId: receiver.id }),
             });
 
             if (!response.ok) {

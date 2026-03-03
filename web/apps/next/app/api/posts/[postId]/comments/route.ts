@@ -1,7 +1,8 @@
 import { authConfig } from "@/app/auth";
-import { createNewComment, getCommentById } from "@studify/database";
+import { createNewComment, getCommentById, getPostById } from "@studify/database";
 import { getServerSession } from "next-auth";
 import { NextRequest, NextResponse } from "next/server";
+import { fireWebsocketEvent } from "@/lib/websocket/websocket";
 
 export async function POST(request: NextRequest, { params }: { params: { postId: string } }) {
     const session = await getServerSession(authConfig);
@@ -33,6 +34,11 @@ export async function POST(request: NextRequest, { params }: { params: { postId:
 
     if (!comment) {
         return NextResponse.json({ error: 'Failed to retrieve created comment' }, { status: 500 });
+    }
+
+    const post = await getPostById(+postId);
+    if (post) {
+        await fireWebsocketEvent("comment-created", { comment, post, courseId: course.id });
     }
 
     return NextResponse.json({ success: true, comment }, { status: 201 });

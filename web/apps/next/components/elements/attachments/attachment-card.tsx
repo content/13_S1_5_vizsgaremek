@@ -13,7 +13,6 @@ type AttachmentCardProps = {
 export default function AttachmentCard({ attachment, size = 'medium' }: AttachmentCardProps) {
     const [isOpen, setIsOpen] = useState(false);
 
-    console.log(attachment);
     const extension = attachment.name.split('.').pop()?.toLowerCase();
 
     const sizeMappings = {
