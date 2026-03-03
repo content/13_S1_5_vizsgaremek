@@ -125,7 +125,11 @@ export async function getCoursesByUserId(userId: number): Promise<Course[]> {
             }).filter((type: PostType): type is PostType => type !== undefined),
         }
 
-        return { 
+        if(!settings.showInviteCode && !isUserTeacher) {
+            course.invitationCode = undefined;
+        }
+
+        return {
             id: course.id,
             name: course.name,
             invitationCode: course.invitationCode,
@@ -322,12 +326,19 @@ export async function joinCourse(userId: number, invitationCode: string): Promis
         return getCourseById(course.id);
     }
 
+    const isAutoApproved = course.settings?.autoApproveMembers ?? false;
+    const isAutoRejected = course.settings?.autoRejectMembers ?? false;
+
+    if(isAutoRejected) {
+        return { message: "Your request to join this course has been automatically rejected." } as unknown as JSON;
+    }
+
     const memberResult = await db
         .insert(coursesMembers)
         .values({
             courseId: course.id,
             userId: userId,
-            isApproved: false
+            isApproved: isAutoApproved
         })
         .execute();
 

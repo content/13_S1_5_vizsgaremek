@@ -25,6 +25,7 @@ export const coursesMembers = mysqlTable('courses_members', {
     userId: int('user_id').notNull().references(() => users.id),
     isTeacher: boolean('is_teacher').notNull().default(false),
     isApproved: boolean('is_approved').notNull().default(false),
+    isBanned: boolean('is_banned').notNull().default(false),
 });
 
 export const backgroundAttachments = mysqlTable('background_attachments', {

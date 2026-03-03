@@ -7,8 +7,11 @@ export function getRelativeTime(date: Date | string | number): string {
         return "Ismeretlen időpont";
     }
 
-    const now = new Date();
-    const diff = now.getTime() - d.getTime();
+    const now = Date.now();
+    let diff = now - d.getTime();
+
+    // clock skew protection
+    if (diff < 0) diff = 0;
 
     const seconds = Math.floor(diff / 1000);
     const minutes = Math.floor(seconds / 60);

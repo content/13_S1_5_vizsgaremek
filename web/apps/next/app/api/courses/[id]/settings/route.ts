@@ -1,13 +1,10 @@
 import { authConfig } from "@/app/auth";
+import { CoursePermissions } from "@/lib/permissions/mappings";
+import { mergePermissions, validatePermissions } from "@/lib/permissions/utils";
+import { updateSettings } from "@studify/database";
 import { Course, CourseMember } from "@studify/types";
 import { getServerSession } from "next-auth";
 import { NextRequest, NextResponse } from "next/server";
-import { mergePermissions, validatePermissions } from "@/lib/permissions/utils";
-import { CoursePermissions } from "@/lib/permissions/mappings";
-import { db } from "@studify/database/mysql";
-import { courses } from "@studify/database/schema/courses";
-import { eq } from "drizzle-orm";
-import { updateSettings } from "@studify/database";
 
 export async function POST(request: NextRequest, { params }: { params: { id: string } }) {
     const session = await getServerSession(authConfig);

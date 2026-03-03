@@ -3,6 +3,7 @@ import { createNewPost, getCourseById, getPostTypes } from "@studify/database";
 import { getServerSession } from "next-auth";
 import { NextRequest, NextResponse } from "next/server";
 import { fireWebsocketEvent } from "@/lib/websocket/websocket";
+import { PostType } from "@studify/types";
 
 export async function POST(req: NextRequest) {
     const session = await getServerSession(authConfig);
@@ -29,7 +30,19 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({ error: "Course not found" }, { status: 404 });
     }
 
-    // TODO: Check if user is a teacher in the course or has permissions to create a post
+    const isEnrolled = course.members.some(m => m.user.id === userId);
+    if(!isEnrolled) {
+        return NextResponse.json({ error: "User not enrolled in course" }, { status: 403 });
+    }
+
+    const isTeacher = course.members.find(m => m.user.id === userId)?.isTeacher;
+    const allowedPostTypes = course.settings.allowedStudentPostTypes;
+    
+    const canCreatePosts = isTeacher || (course.settings.studentsCanCreatePosts && !isTeacher && allowedPostTypes.some((pt: PostType) => pt.id == postTypeId));
+
+    if(!canCreatePosts) {
+        return NextResponse.json({ error: "User does not have permission to create posts" }, { status: 403 });
+    }
 
     const post = await createNewPost({
         userId: userId,
