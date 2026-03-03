@@ -383,3 +383,39 @@ export async function deleteCourse(courseId: number): Promise<boolean> {
 
     return result[0].affectedRows > 0;
 }
+
+export async function demoteMember(courseId: number, userId: number): Promise<boolean> {
+    const result = await db
+        .update(coursesMembers)
+        .set({
+            isTeacher: false
+        })
+        .where(and(eq(coursesMembers.courseId, courseId), eq(coursesMembers.userId, userId)))
+        .execute();
+
+    return result[0].affectedRows > 0;
+}
+
+export async function promoteMember(courseId: number, userId: number): Promise<boolean> {
+    const result = await db
+        .update(coursesMembers)
+        .set({
+            isTeacher: true
+        })
+        .where(and(eq(coursesMembers.courseId, courseId), eq(coursesMembers.userId, userId)))
+        .execute();
+
+    return result[0].affectedRows > 0;
+}
+
+export async function kickMember(courseId: number, userId: number): Promise<boolean> {
+    const result = await db
+        .update(coursesMembers)
+        .set({
+            isBanned: true
+        })
+        .where(and(eq(coursesMembers.courseId, courseId), eq(coursesMembers.userId, userId)))
+        .execute();
+
+    return result[0].affectedRows > 0;
+}
