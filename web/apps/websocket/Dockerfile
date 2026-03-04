@@ -4,7 +4,7 @@ FROM imbios/bun-node:latest-current-alpine AS base
 WORKDIR /usr/src/app
 COPY . .
 RUN npm install -g pnpm
-RUN pnpm install
+RUN bun install
 ENV NODE_ENV=production
 RUN pnpm --filter=@studify/ws run build
 
