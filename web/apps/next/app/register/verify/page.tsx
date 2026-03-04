@@ -149,8 +149,6 @@ export default function RegisterVerifiedEmailPage() {
             notify("Érvénytelen vagy lejárt token!", { type: "error", description: "Kérjük próbáld meg újra a regisztrációt!" });
             redirect("/register");
         }
-
-        notify("Email cím sikeresen megerősítve!", { type: "success", description: "Most már befejezheted a regisztrációt a jelszó megadásával." });
     }, [solvedToken]);
 
     useEffect(() => {

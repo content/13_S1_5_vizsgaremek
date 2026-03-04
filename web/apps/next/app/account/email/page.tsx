@@ -1,3 +1,5 @@
+"use client";
+
 import LandingHeader from "@/components/elements/landing-header";
 import { useNotificationProvider } from "@/components/notification-provider";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
