@@ -9,6 +9,7 @@
   "scripts": {
     "build": "bun run --filter @studify/ws build && bun run --filter @studify/next build",
     "start": "concurrently --prefix-colors blue,magenta --prefix {time}: --timestampFormat HH:mm:ss \"bun run --filter @studify/ws start\" \"bun run --filter @studify/next start\"",
+    
     "dev": "concurrently --prefix-colors blue,magenta --prefix {time}: --timestampFormat HH:mm:ss \"bun run dev --filter apps/ws\" \"bun run dev --filter apps/next\"",
     "migrations:generate": "bun run --filter @studify/database drizzle-kit generate",
     "migrations:push": "bun run --filter @studify/database drizzle-kit push",
