@@ -1,5 +1,6 @@
 "use client";
 
+import { Suspense } from "react";
 import LandingHeader from "@/components/elements/landing-header";
 import { useNotificationProvider } from "@/components/notification-provider";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -7,7 +8,7 @@ import { verifyEmailToken } from "@/lib/encryption/encryption";
 import { useRouter, useSearchParams } from "next/navigation";
 import React from "react";
 
-export default function EmailChangePage() {
+function EmailChangeContent() {
     const searchParams = useSearchParams();
     const router = useRouter();
     const { notify } = useNotificationProvider();
@@ -107,5 +108,27 @@ export default function EmailChangePage() {
                 </Card>
             </main>
         </div>
+    );
+}
+
+export default function EmailChangePage() {
+    return (
+        <Suspense
+            fallback={
+                <div className="min-h-screen bg-background flex flex-col">
+                    <LandingHeader />
+                    <main className="flex-1 flex items-center justify-center px-4 py-12">
+                        <Card className="w-full max-w-md border-border">
+                            <CardHeader className="space-y-1 flex flex-col items-center">
+                                <CardTitle className="text-2xl font-bold">Feldolgozás...</CardTitle>
+                                <CardDescription>Kérjük várj, betöltés folyamatban.</CardDescription>
+                            </CardHeader>
+                        </Card>
+                    </main>
+                </div>
+            }
+        >
+            <EmailChangeContent />
+        </Suspense>
     );
 }
