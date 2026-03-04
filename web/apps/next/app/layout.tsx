@@ -7,6 +7,8 @@ import NextAuthProvider from '../components/session-provider';
 import { NotificationProvider } from "@/components/notification-provider";
 import { ThemeProvider } from "@/components/theme-provider";
 import { SocketProvider } from "@/components/socket-provider";
+import { Suspense } from "react";
+import Fallback from "@/components/elements/fallback";
 
 export const metadata: Metadata = {
   title: "Studify - Az okos tanulási társ",
@@ -25,6 +27,7 @@ export default function RootLayout({children,}: {children: React.ReactNode}) {
   return (
     <html lang="hu" className={`${inter.className}`} suppressHydrationWarning>
       <body className={`overflow-x-hidden`}>
+        <Suspense fallback={<Fallback title="Betöltés..." description="Kérjük várj, az oldal betöltése folyamatban." showHeader={false} />}>
           <NextAuthProvider>
             <ThemeProvider 
               attribute="class"
@@ -39,6 +42,7 @@ export default function RootLayout({children,}: {children: React.ReactNode}) {
               </NotificationProvider>
             </ThemeProvider>
           </NextAuthProvider>
+        </Suspense>
       </body>
     </html>
   )
