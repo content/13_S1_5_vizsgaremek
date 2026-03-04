@@ -3,13 +3,12 @@
 FROM imbios/bun-node:latest-current-alpine AS base
 WORKDIR /usr/src/app
 COPY . .
-RUN npm install -g pnpm
 RUN bun install
 ENV NODE_ENV=production
-RUN pnpm --filter=@studify/ws run build
+RUN bun --filter=@studify/ws run build
 
 FROM base AS release
-COPY --from=base /usr/src/app/apps/ws/dist /usr/src/app
+COPY --from=base /usr/src/app/apps/websocket/dist /usr/src/app
 
 # run the app
 USER bun
