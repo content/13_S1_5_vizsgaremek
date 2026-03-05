@@ -28,7 +28,6 @@ services:
     environment:
       MYSQL_ROOT_PASSWORD: ${MYSQL_PASSWORD}
       MYSQL_DATABASE: ${MYSQL_DATABASE}
-      MYSQL_ALLOW_EMPTY_PASSWORD: "yes"
     volumes:
       - mysql_data:/var/lib/mysql
     networks:
@@ -84,6 +83,8 @@ services:
     restart: always
     environment:
       NODE_ENV: production
+    env_file:
+      - .env
     depends_on:
       mariadb:
         condition: service_healthy
