@@ -2,10 +2,10 @@ import { MySqlTableWithColumns } from "drizzle-orm/mysql-core";
 import { eq } from 'drizzle-orm';
 import { db } from "../../mysql";
 import { attachments } from "../../schema/attachments";
-import { postAttachments } from "@studify/database/schema/posts";
+import { postAttachments } from "../../schema/posts";
 import { Attachment } from "@studify/types";
-import { backgroundAttachments, courses } from "@studify/database/schema/courses";
-import { submissionHistoryAttachments } from "@studify/database/schema/submissions";
+import { backgroundAttachments, courses } from "../../schema/courses";
+import { submissionHistoryAttachments } from "../../schema/submissions";
 
 export async function createAttachment(uploaderId: number, filePath: string, fileName: string): Promise<Attachment> {
     const result = await db

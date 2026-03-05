@@ -1,0 +1,100 @@
+services:
+  next:
+    build: 
+      context: .
+      dockerfile: ./apps/next/Dockerfile
+    container_name: next
+    restart: always
+    ports:
+      - "3000:3000"
+    environment:
+      NODE_ENV: production
+
+    env_file:
+      - .env
+
+    depends_on:
+      mariadb:
+        condition: service_healthy
+      migrations:
+        condition: service_completed_successfully
+    networks:
+      - network-public
+
+  mariadb:
+    image: mysql:8.0
+    container_name: mysql_mariadb
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_PASSWORD}
+      MYSQL_DATABASE: ${MYSQL_DATABASE}
+      MYSQL_ALLOW_EMPTY_PASSWORD: "yes"
+    volumes:
+      - mysql_data:/var/lib/mysql
+    networks:
+      - network-public
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "--password=${MYSQL_PASSWORD}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+
+  migrations:
+    build:
+      context: .
+      dockerfile: ./apps/next/Dockerfile
+    container_name: db_migrations
+    working_dir: /app
+    command: pnpm --filter @studify/database drizzle-kit migrate
+    environment:
+      MYSQL_HOST: mariadb
+      MYSQL_PORT: ${MYSQL_PORT}
+      MYSQL_USER: ${MYSQL_USER}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+      MYSQL_DATABASE: ${MYSQL_DATABASE}
+    depends_on:
+      mariadb:
+        condition: service_healthy
+    networks:
+      - network-public
+    restart: on-failure
+
+  phpmyadmin:
+    image: phpmyadmin:latest
+    container_name: phpmyadmin
+    restart: always
+    environment:
+      PMA_HOST: mariadb
+      PMA_PORT: ${MYSQL_PORT}
+      PMA_USER: ${MYSQL_USER}
+      PMA_PASSWORD: ${MYSQL_PASSWORD}
+    depends_on:
+      - mariadb
+    ports:
+      - "8080:80"
+    networks:
+      - network-public
+
+  websocket:
+    build:
+      context: .
+      dockerfile: ./apps/websocket/Dockerfile
+    container_name: websocket_app
+    restart: always
+    environment:
+      NODE_ENV: production
+    depends_on:
+      mariadb:
+        condition: service_healthy
+      migrations:
+        condition: service_completed_successfully
+    networks:
+      - network-public
+
+volumes:
+  mysql_data:
+
+networks:
+  network-public:
+    external: true

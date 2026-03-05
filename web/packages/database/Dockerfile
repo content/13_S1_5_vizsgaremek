@@ -6,7 +6,7 @@ ENV NODE_ENV=production
 
 COPY . .
 
-RUN bun install --production --ignore-scripts
+RUN bun install --production
 
 RUN bun --filter=@studify/ws run build
 

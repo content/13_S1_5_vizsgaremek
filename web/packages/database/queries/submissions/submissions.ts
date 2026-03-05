@@ -1,8 +1,8 @@
 import { and, asc, desc, eq } from 'drizzle-orm';
 
-import { submissionHistories, submissions } from '@studify/database/schema/submissions';
+import { submissionHistories, submissions } from '../../schema/submissions';
 import { Attachment, HistorySubmission, Submission, SubmissionStatus } from '@studify/types';
-import { submissionHistoryAttachments, submissionStatuses } from '@studify/database/schema/submissions';
+import { submissionHistoryAttachments, submissionStatuses } from '../../schema/submissions';
 import { db } from '../../mysql';
 import { createAttachment, createRelation, getAttachmentById, getAttachmentsBySubmissionHistoryId } from '../attachments/attachments';
 import { getUserById, getUserByIdWithoutCourses } from '../users/users';

@@ -1,7 +1,6 @@
-import * as sharp from 'sharp';
-
 export async function getDominantColor(imageUrl: string): Promise<string> {
     try {
+        const sharp = (await import('sharp')).default;
         const response = await fetch(imageUrl);
         const buffer = await response.arrayBuffer();
         
