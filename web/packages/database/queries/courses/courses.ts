@@ -244,7 +244,6 @@ export async function getCourseById(courseId: number): Promise<Course | null> {
     const members = await getCourseMembers(course.id);
     const posts = await getPostsByCourseId(course.id);
 
-    // Handle settings that might be a string or object
     let settingsData = course.settings;
     if (typeof settingsData === 'string') {
         settingsData = JSON.parse(settingsData);
@@ -292,7 +291,8 @@ export async function createCourse(creatorId: number, name: string, backgroundIm
         .values({
             name: name,
             invitationCode: invitationCode,
-            color: color
+            color: color,
+            settings: '{"allowComments":true,"showInviteCode":true,"studentsCanCreatePosts":false,"autoApproveMembers":false,"autoRejectMembers":false,"allowedStudentPostTypes":[]}'
         })
         .execute();
 
@@ -340,8 +340,6 @@ export async function joinCourse(userId: number, invitationCode: string): Promis
 
     const isAutoApproved = settings.autoApproveMembers ?? false;
     const isAutoRejected = settings.autoRejectMembers ?? false;
-
-    console.log("Course settings for auto approval/rejection:", { isAutoApproved, isAutoRejected });
 
     if(isAutoRejected) {
         return { message: "Your request to join this course has been automatically rejected." } as unknown as JSON;

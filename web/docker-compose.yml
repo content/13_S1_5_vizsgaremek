@@ -14,8 +14,6 @@ services:
     depends_on:
       mariadb:
         condition: service_healthy
-      migrations:
-        condition: service_completed_successfully
     networks:
       - network-public
 
@@ -37,26 +35,6 @@ services:
       timeout: 5s
       retries: 10
       start_period: 30s
-
-  migrations:
-    build:
-      context: .
-      dockerfile: ./apps/next/Dockerfile
-    container_name: db_migrations
-    working_dir: /app
-    command: pnpm --filter @studify/database drizzle-kit migrate
-    environment:
-      MYSQL_HOST: mariadb
-      MYSQL_PORT: ${MYSQL_PORT}
-      MYSQL_USER: ${MYSQL_USER}
-      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
-      MYSQL_DATABASE: ${MYSQL_DATABASE}
-    depends_on:
-      mariadb:
-        condition: service_healthy
-    networks:
-      - network-public
-    restart: on-failure
 
   phpmyadmin:
     image: phpmyadmin:latest
@@ -85,8 +63,6 @@ services:
     depends_on:
       mariadb:
         condition: service_healthy
-      migrations:
-        condition: service_completed_successfully
     networks:
       - network-public
 
