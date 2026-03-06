@@ -1,24 +1,21 @@
 "use client";
 
-import { ThemeToggle } from "@/components/theme-toggle"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { Button } from "@/components/ui/button"
+import { ThemeToggle } from "@/components/theme-toggle";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { BookOpen, Calendar, GraduationCap, Home, Menu, Plus, Settings, Users, X } from "lucide-react"
-import { signOut, useSession } from "next-auth/react"
-import Link from "next/link"
-import React, { useEffect } from "react"
-import { Label } from "./ui/label";
-import { Input } from "./ui/input";
 import { createCourse, joinCourse } from "@/lib/dashboard/utils";
-import { useNotificationProvider } from "./notification-provider";
-import { UploadDropzone } from "./uploadthing/uploadthing";
+import { BookOpen, Calendar, GraduationCap, Home, Menu, Plus, Settings, Users, X } from "lucide-react";
+import { signOut, useSession } from "next-auth/react";
+import Link from "next/link";
 import { usePathname } from "next/navigation";
-import ImageUploadButton from "./elements/attachments/image-upload-button";
+import React, { useEffect } from "react";
 import { genUploader } from "uploadthing/client";
-import BannerUploadButton from "./elements/attachments/banner-upload-button";
 import CreateNewCourseDialog from "./elements/dashboard/createNewCourseDialog";
+import { useNotificationProvider } from "./notification-provider";
+import { Input } from "./ui/input";
+import { Label } from "./ui/label";
 
 export function DashboardSidebar({ children }: { children: React.ReactNode }) {
      const { notify } = useNotificationProvider();
@@ -35,7 +32,7 @@ export function DashboardSidebar({ children }: { children: React.ReactNode }) {
      const [isNewCourseCreateBtnDisabled, setIsNewCourseCreateBtnDisabled] = React.useState(false);
 
      const [newCourseName, setNewCourseName] = React.useState("");
-     const [newCourseBackgroundImageUrl, setNewCourseBackgroundImageUrl] = React.useState<string | null>(null);
+     const [newCourseBackgroundImageUrl, setNewCourseBackgroundImageUrl] = React.useState<File | null>(null);
      const [invitationCode, setInvitationCode] = React.useState("");
 
      // simple nav definition; active state is computed at render time using the current pathname
@@ -48,6 +45,8 @@ export function DashboardSidebar({ children }: { children: React.ReactNode }) {
      const handleCreateCourse = async () => {
          if(!session || !session.user) return;
 
+         
+         setIsNewCourseCreateBtnDisabled(true);
          const newCourse = await createCourse(session.user.id, newCourseName, newCourseBackgroundImageUrl);
          switch(newCourse) {
              case null:
@@ -60,12 +59,17 @@ export function DashboardSidebar({ children }: { children: React.ReactNode }) {
          }
 
          session.user.courses.push(newCourse);
+         setIsNewCourseCreateBtnDisabled(false);
          setCreateDialogOpen(false);
+         setNewCourseBackgroundImageUrl(null);
+         setNewCourseName("");
      }
      
      const handleJoinCourse = async () => {
          if(!session || !session.user) return;
 
+
+         const url = await handleBannerUpload(newCourseBackgroundImageUrl as File);
          const response = await joinCourse(session.user.id, invitationCode);
 
          if (response === null) {
@@ -94,7 +98,7 @@ export function DashboardSidebar({ children }: { children: React.ReactNode }) {
              const url = fileInfo?.ufsUrl ?? fileInfo?.url ?? null;
              if (url) {
                  notify("Sikeres feltöltés!", { type: "success", description: "A háttérkép sikeresen feltöltve." });
-                 setNewCourseBackgroundImageUrl(url);
+                 setNewCourseBackgroundImageUrl(file);
              } else {
                  notify("Hiba a kép feltöltése során!", { type: "error", description: "Próbáld újra később!" });
              }
@@ -239,7 +243,7 @@ export function DashboardSidebar({ children }: { children: React.ReactNode }) {
                          newCourseName={newCourseName}
                          setNewCourseName={setNewCourseName}
                          newCourseBackgroundImageUrl={newCourseBackgroundImageUrl}
-                         handleBannerUpload={handleBannerUpload}
+                         handleBannerUpload={setNewCourseBackgroundImageUrl}
                          isNewCourseCreateBtnDisabled={isNewCourseCreateBtnDisabled}
                          handleCreateCourse={handleCreateCourse}
                      />

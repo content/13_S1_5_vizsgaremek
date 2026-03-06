@@ -44,7 +44,7 @@ export default function PostPage({ params }: { params: Promise<{ courseId: strin
 
     const [submission, setSubmission] = React.useState<Submission | null>(null);
     const [submissionAttachmentAdditions, setSubmissionAttachmentAdditions] = React.useState<Map<string, [string, string]>>(new Map());
-    const [isSubmittingBtnDisabled, setIsSubmittingBtnDisabled] = React.useState<boolean>(false);
+    const [isSubmittingBtnDisabled, setIsSubmittingBtnDisabled] = React.useState<boolean>(true);
     const [isAddSubmissionAttachmentDialogOpen, setIsAddSubmissionAttachmentDialogOpen] = React.useState<boolean>(false);
     const [deadlineAt, setDeadlineAt] = React.useState<Date | null>(null);
 
@@ -456,6 +456,18 @@ export default function PostPage({ params }: { params: Promise<{ courseId: strin
                                                     <UploadDropzone
                                                         className="border-border bg-background hover:bg-accent/50 transition-colors"
                                                         endpoint="fileUploader"
+                                                        config={{ mode: "auto" }}
+                                                        content={{
+                                                            label: "Húzd ide a fájlokat, vagy kattints a tallózáshoz",
+                                                            allowedContent: "Képek, PDF-ek és egyéb fájlok",
+                                                            button: "Feltöltés",
+                                                        }}
+                                                        
+                                                        onBeforeUploadBegin={(files) => {
+                                                            setIsSubmittingBtnDisabled(true);
+                                                            return files;
+                                                        }}
+                                                        
                                                         onClientUploadComplete={(res) => {
                                                             for (const file of res) {
                                                                 const name = file?.name;
@@ -463,8 +475,7 @@ export default function PostPage({ params }: { params: Promise<{ courseId: strin
                                                                 const type = file?.type;
                                                                 
                                                                 if(url && name) {
-                                                                    notify("Sikeres feltöltés!", { type: "success", description: "A profilképed sikeresen feltöltve." });
-                                                                
+                                                                    notify("Sikeres feltöltés!", { type: "success", description: `A(z) "${name}" fájl sikeresen feltöltve.` });
                                                                     setSubmissionAttachmentAdditions(prev => new Map(prev).set(name, [url, type]));
                                                                 }
                                                             }
@@ -476,11 +487,12 @@ export default function PostPage({ params }: { params: Promise<{ courseId: strin
                                                         }}
                                 
                                                         onUploadError={(error: Error) => {
-                                                            notify("Hiba a kép feltöltése során!", { type: "error", description: "Próbáld újra később!" });
+                                                            notify("Hiba a fájl feltöltése során!", { type: "error", description: "Próbáld újra később!" });
                                                             console.error(error);
                                                             setIsSubmittingBtnDisabled(false);
                                                         }}
                                                     />
+                                                    {submissionAttachmentAdditions.size > 0 && (
                                                     <div className="mt-4">
                                                         {Array.from(submissionAttachmentAdditions.entries()).map(([name, [url, type]]) => (
                                                             <AttachmentUploadCard key={`ATTACHMENT_UPLOADED_${name}`} name={name} url={url} type={type} onRemove={(name) => {
@@ -492,7 +504,7 @@ export default function PostPage({ params }: { params: Promise<{ courseId: strin
                                                             }} />
                                                         ))}
                                                     </div>
-                                                    
+                                                    )}
                                                 </div>
                                                 <DialogFooter>
                                                     <Button

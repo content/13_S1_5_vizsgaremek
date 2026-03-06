@@ -113,13 +113,6 @@ export default function PostDetailsCard({ course, post, submission }: PostDetail
                         />
                         <div className="flex items-center justify-end gap-2">
                             <Button
-                                type="reset"
-                                variant="outline"
-                                className="px-3 py-2 rounded text-sm"
-                            >
-                                Mégse
-                            </Button>
-                            <Button
                                 type="submit"
                                 variant="default"
                                 className={`px-3 py-2 rounded ${colors.text} text-sm`}

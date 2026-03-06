@@ -30,7 +30,7 @@ export default function PostComment({ comment, course }: PostCommentProps) {
                     </p>
                 </CardTitle>
             </CardHeader>
-            <CardContent>
+            <CardContent className="text-wrap break-words">
                 {comment.message}
             </CardContent>
         </Card>

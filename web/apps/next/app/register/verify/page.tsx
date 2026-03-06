@@ -1,18 +1,17 @@
 "use client";
 
+import ProfilePictureUploadButton from "@/components/elements/attachments/profile-picture-upload-button";
 import LandingHeader from "@/components/elements/landing-header";
 import { useNotificationProvider } from "@/components/notification-provider";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import ImageUploadButton from "@/components/elements/attachments/image-upload-button";
-import { genUploader } from "uploadthing/client";
 import { verifyEmailToken } from "@/lib/encryption/encryption";
 import { useSession } from "next-auth/react";
 import { redirect, useSearchParams } from "next/navigation";
 import React, { useEffect } from "react";
-import ProfilePictureUploadButton from "@/components/elements/attachments/profile-picture-upload-button";
+import { genUploader } from "uploadthing/client";
 
 export default function RegisterVerifiedEmailPage() {
     const searchParams = useSearchParams();
@@ -41,6 +40,7 @@ export default function RegisterVerifiedEmailPage() {
 
     const [isContinueButtonDisabled, setIsContinueButtonDisabled] = React.useState(true);
     const [isRegisterBtnDisabled, setIsRegisterBtnDisabled] = React.useState(false)
+    const [sentNotification, setSentNotification] = React.useState(false);
 
     const registerUser = async (event: React.FormEvent<HTMLFormElement>) => {
         if(!token) return;
@@ -93,16 +93,19 @@ export default function RegisterVerifiedEmailPage() {
             switch(response.status) {
                 case 201:
                     notify("Sikeres regisztráció!", { type: "success", description: "Most már bejelentkezhetsz a fiókodba." });
+                    setSentNotification(true);
                     redirect("/login");
-                    return;
                 case 400:
+                    if(sentNotification) return;
                     const data = await response.json();
                     notify("Hiba a regisztráció során!", { type: "error", description: data.error || "Próbáld újra később!" });
                     break;
                 case 500:
+                    if(sentNotification) return;
                     notify("Szerver hiba!", { type: "error", description: "Próbáld újra később!" });
                     break;
                 default:
+                    if(sentNotification) return;
                     notify("Ismeretlen hiba!", { type: "error", description: "Próbáld újra később!" });
                     break;
             }

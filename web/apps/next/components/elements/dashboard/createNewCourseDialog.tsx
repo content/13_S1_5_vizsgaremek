@@ -17,6 +17,7 @@ type CreateNewCourseDialogProps = {
 
 export default function CreateNewCourseDialog(props: CreateNewCourseDialogProps) {
     const { createDialogOpen, setCreateDialogOpen, newCourseName, setNewCourseName, newCourseBackgroundImageUrl, handleBannerUpload, isNewCourseCreateBtnDisabled, handleCreateCourse } = props;
+    
     return (
         <Dialog open={createDialogOpen} onOpenChange={setCreateDialogOpen}>
             <DialogContent>

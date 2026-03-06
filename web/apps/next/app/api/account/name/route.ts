@@ -16,7 +16,7 @@ export async function POST(request: NextRequest) {
 
     const { firstName, lastName } = await request.json();
 
-    if(validateName(firstName) || validateName(lastName)) {
+    if(!validateName(firstName) || !validateName(lastName)) {
         return NextResponse.json(
             { error: "Helytelen névformátum" },
             { status: 400 }
