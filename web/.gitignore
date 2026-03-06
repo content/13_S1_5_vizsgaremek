@@ -70,3 +70,5 @@ vitest.config.*.timestamp*
 *.local
 .tanstack
 .output
+
+.pnpm-store
