@@ -214,3 +214,52 @@ export async function changeEmail(currEmail: string, newEmail: string): Promise<
 
     return result[0].affectedRows > 0;
 }
+
+export async function removeProfilePicture(userId: number): Promise<boolean> {
+    const currentRelation = (await db
+        .select()
+        .from(profilePictureAttachments)
+        .where(eq(profilePictureAttachments.userId, userId))
+        .execute())[0];
+
+    if(currentRelation) {
+        await db
+            .delete(profilePictureAttachments)
+            .where(eq(profilePictureAttachments.userId, userId))
+            .execute();
+
+        await db
+            .delete(attachments)
+            .where(eq(attachments.id, currentRelation.attachmentId))
+            .execute();
+
+        return true;
+    }
+
+    return false;
+}
+
+export async function changeProfilePicture(userId: number, newProfilePicturePath: string, newProfilePictureName: string): Promise<boolean> {
+    const currentRelation = (await db
+        .select()
+        .from(profilePictureAttachments)
+        .where(eq(profilePictureAttachments.userId, userId))
+        .execute())[0];
+
+    if(currentRelation) {
+        await db
+            .delete(profilePictureAttachments)
+            .where(eq(profilePictureAttachments.userId, userId))
+            .execute();
+
+        await db
+            .delete(attachments)
+            .where(eq(attachments.id, currentRelation.attachmentId))
+            .execute();
+    }
+
+    const attachmentId = (await createAttachment(userId, newProfilePicturePath, newProfilePictureName)).id;
+    const relation = await createRelation({foreignId: userId, attachmentId, table: profilePictureAttachments});
+
+    return typeof relation === 'number';
+}

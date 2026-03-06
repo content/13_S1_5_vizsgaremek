@@ -1,30 +1,42 @@
-import { verifyEmailToken } from "@/lib/encryption/encryption";
-import { changeEmail } from "@studify/database";
+import { authConfig } from "@/app/auth";
+import ChangeEmail from "@/components/emails/change-email";
+import { sendEmail } from "@/lib/email/email";
+import { generateVerificationToken } from "@/lib/encryption/encryption";
+import { render } from "@react-email/components";
+import { getServerSession } from "next-auth";
 import { NextRequest, NextResponse } from "next/server";
 
 export async function POST(request: NextRequest) {
-    const { token } = await request.json();
+    const session = await getServerSession(authConfig);
 
-    const solvedToken = await verifyEmailToken(token);
+    if(!session || !session.user || !session.user.email) {
+        return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const { newEmail } = await request.json();
+
+    if(!newEmail || typeof newEmail !== "string") {
+        return NextResponse.json({ error: "Invalid email" }, { status: 400 });
+    }
+
+    if(newEmail === session.user.email) {
+        return NextResponse.json({ error: "New email cannot be the same as the current email" }, { status: 400 });
+    }
+
+    const token = await generateVerificationToken(`change-email|${session.user.email}|${newEmail}`);
+
+    const emailHtml = await render(ChangeEmail({
+        verifyHash: token,
+        newEmail,
+        firstName: session.user.first_name,
+        lastName: session.user.last_name,
+    }));
+
+    const sendResult = await sendEmail(newEmail, "Studify - Email cím megerősítése", emailHtml);
+
+    if(sendResult) {
+        return NextResponse.json({ message: "Verification email sent" });
+    }
     
-    if(!solvedToken || !solvedToken.startsWith("change-email|")) {
-        return NextResponse.json({ error: "Invalid or expired token" }, { status: 400 });
-    }
-
-    const parts = solvedToken.split("|");
-
-    if(parts.length !== 3) {
-        return NextResponse.json({ error: "Invalid token format" }, { status: 400 });
-    }
-
-    const currEmail = parts[1];
-    const newEmail = parts[2];
-
-    const success = await changeEmail(currEmail, newEmail);
-
-    if(success) {
-        return NextResponse.json({ message: "Email cím sikeresen megváltoztatva!" });
-    } else {
-        return NextResponse.json({ error: "Nem sikerült megváltoztatni az email címet" }, { status: 500 });
-    }
+    return NextResponse.json({ error: "Failed to send verification email" }, { status: 500 });
 }
