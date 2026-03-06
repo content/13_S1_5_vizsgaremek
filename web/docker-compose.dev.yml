@@ -1,0 +1,88 @@
+services:
+  next:
+    image: node:20-slim
+    container_name: next_dev
+    working_dir: /app
+    restart: unless-stopped
+    environment:
+      NODE_ENV: development
+    env_file:
+      - .env
+    ports:
+      - "3000:3000"
+    volumes:
+      - .:/app
+      - next_node_modules:/app/node_modules
+      - next_app_node_modules:/app/apps/next/node_modules
+    command: sh -c "npm install -g pnpm && pnpm install && pnpm --filter=@studify/next dev"
+    depends_on:
+      mariadb:
+        condition: service_healthy
+    networks:
+      - network-public
+
+  mariadb:
+    image: mysql:8.0
+    container_name: mysql_mariadb_dev
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_PASSWORD}
+      MYSQL_DATABASE: ${MYSQL_DATABASE}
+      MYSQL_ALLOW_EMPTY_PASSWORD: "yes"
+    volumes:
+      - mysql_data_dev:/var/lib/mysql
+    networks:
+      - network-public
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "--password=${MYSQL_PASSWORD}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+
+  phpmyadmin:
+    image: phpmyadmin:latest
+    container_name: phpmyadmin_dev
+    restart: unless-stopped
+    ports:
+      - "8080:80"
+    environment:
+      PMA_HOST: mariadb
+      PMA_PORT: ${MYSQL_PORT}
+      PMA_USER: ${MYSQL_USER}
+      PMA_PASSWORD: ${MYSQL_PASSWORD}
+    depends_on:
+      - mariadb
+    networks:
+      - network-public
+
+  websocket:
+    image: imbios/bun-node:latest-current-alpine
+    container_name: websocket_dev
+    working_dir: /app
+    restart: unless-stopped
+    environment:
+      NODE_ENV: development
+    env_file:
+      - .env
+    ports:
+      - "3001:3001"
+    volumes:
+      - .:/app
+      - ws_node_modules:/app/node_modules
+    command: sh -c "bun install && bun --filter=@studify/ws dev"
+    depends_on:
+      mariadb:
+        condition: service_healthy
+    networks:
+      - network-public
+
+volumes:
+  mysql_data_dev:
+  next_node_modules:
+  next_app_node_modules:
+  ws_node_modules:
+
+networks:
+  network-public:
+    external: true
