@@ -1,33 +1,9 @@
 "use client"
 
-import { useState, useRef, useEffect } from "react"
-import Link from "next/link"
-import Image from "next/image"
+import ProfilePictureUploadButton from "@/components/elements/attachments/profile-picture-upload-button"
+import { useNotificationProvider } from "@/components/notification-provider"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { ThemeToggle } from "@/components/theme-toggle"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import {
-  GraduationCap,
-  Menu,
-  User,
-  Camera,
-  Trash2,
-  Eye,
-  EyeOff,
-  Mail,
-  Check,
-  AlertCircle,
-} from "lucide-react"
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
 import {
   Dialog,
   DialogContent,
@@ -36,11 +12,21 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import {
+  AlertCircle,
+  Camera,
+  Check,
+  Eye,
+  EyeOff,
+  Mail,
+  Trash2
+} from "lucide-react"
 import { useSession } from "next-auth/react"
-import { useNotificationProvider } from "@/components/notification-provider"
 import { redirect } from "next/navigation"
-import BannerUploadButton from "@/components/elements/attachments/banner-upload-button"
-import ProfilePictureUploadButton from "@/components/elements/attachments/profile-picture-upload-button"
+import { useEffect, useRef, useState } from "react"
+import { genUploader } from "uploadthing/client"
 
 export default function SettingsPage() {
   const { data: session, status } = useSession();
@@ -48,20 +34,17 @@ export default function SettingsPage() {
 
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
-  // Profile state
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
   const [email, setEmail] = useState("");
   const [profileImage, setProfileImage] = useState<string | File | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Email change state
   const [newEmail, setNewEmail] = useState("");
   const [emailDialogOpen, setEmailDialogOpen] = useState(false);
   const [emailVerificationSent, setEmailVerificationSent] = useState(false);
   const [emailVerificationCode, setEmailVerificationCode] = useState("");
 
-  // Password state
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -71,8 +54,9 @@ export default function SettingsPage() {
   const [passwordError, setPasswordError] = useState("");
   const [passwordSuccess, setPasswordSuccess] = useState(false);
 
-  // Profile save state
   const [profileSaved, setProfileSaved] = useState(false);
+  const [isSavingProfile, setIsSavingProfile] = useState(false);
+  const [isUploadingImage, setIsUploadingImage] = useState(false);
 
   useEffect(() => {
     if (status === "loading") return
@@ -89,6 +73,27 @@ export default function SettingsPage() {
     setProfileImage(session.user.profile_picture || null)
   }, [session, status]);
 
+  if (status === "loading") {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center p-6">
+        <div className="w-full max-w-3xl space-y-8">
+          <div className="h-10 w-1/3 bg-muted/30 rounded-md animate-pulse" />
+          <div className="h-4 w-1/2 bg-muted/20 rounded-md animate-pulse" />
+
+          <div className="space-y-6">
+            <div className="h-48 bg-muted/20 rounded-md animate-pulse" />
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="h-6 bg-muted/20 rounded-md animate-pulse" />
+              <div className="h-6 bg-muted/20 rounded-md animate-pulse" />
+            </div>
+            <div className="h-6 bg-muted/20 rounded-md animate-pulse" />
+            <div className="h-40 bg-muted/20 rounded-md animate-pulse" />
+          </div>
+        </div>
+      </div>
+    )
+  }
+
   const handleProfileImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (file) {
@@ -102,34 +107,150 @@ export default function SettingsPage() {
 
   const handleRemoveProfileImage = () => {
     setProfileImage(null)
-    if (fileInputRef.current) {
-      fileInputRef.current.value = ""
+  }
+
+  const handleUploadProfileImage = async () => {
+    if (!profileImage || !(profileImage instanceof File)) {
+      notify('Nincs kiválasztott feltöltendő fájl.', { type: 'error' });
+      return;
+    }
+
+    setIsUploadingImage(true);
+    try {
+      const { uploadFiles } = genUploader({ fetch: window.fetch });
+      const uploadRes = await uploadFiles('imageUploader', { files: [profileImage] });
+      const fileInfo = Array.isArray(uploadRes) ? uploadRes[0] : uploadRes?.[0] ?? uploadRes;
+      const url = fileInfo?.ufsUrl ?? fileInfo?.url ?? null;
+
+      if (!url) {
+        notify('Nem sikerült feltölteni a képet.', { type: 'error' });
+        return;
+      }
+
+      const picRes = await fetch('/api/account/picture', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ profilePicture: url }),
+      });
+
+      if (!picRes.ok) {
+        const data = await picRes.json().catch(() => ({}));
+        notify(data.error || 'Hiba a profilkép mentése során.', { type: 'error' });
+        return;
+      }
+
+      setProfileImage(url);
+      notify('Profilkép sikeresen feltöltve.', { type: 'success' });
+    } catch (err) {
+      console.error('Upload error', err);
+      notify('Hiba történt a kép feltöltése során.', { type: 'error' });
+    } finally {
+      setIsUploadingImage(false);
     }
   }
 
-  const handleSaveProfile = () => {
-    // Placeholder: replace with your own save logic
-    setProfileSaved(true)
-    setTimeout(() => setProfileSaved(false), 3000)
+  const handleSaveProfile = async () => {
+    setIsSavingProfile(true);
+    try {
+      if (session && session.user) {
+        const currFirst = session.user.first_name || "";
+        const currLast = session.user.last_name || "";
+        if (currFirst !== firstName || currLast !== lastName) {
+          const res = await fetch('/api/account/name', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ firstName, lastName }),
+          });
+
+          if (!res.ok) {
+            const data = await res.json().catch(() => ({}));
+            notify(data.error || 'Hiba a név frissítése során.', { type: 'error' });
+            setIsSavingProfile(false);
+            return;
+          }
+
+          notify('Név sikeresen frissítve.', { type: 'success' });
+        }
+      }
+
+      // Handle profile picture upload if it's a File
+      if (profileImage && profileImage instanceof File) {
+        try {
+          const { uploadFiles } = genUploader({ fetch: window.fetch });
+          const uploadRes = await uploadFiles('imageUploader', { files: [profileImage] });
+          const fileInfo = Array.isArray(uploadRes) ? uploadRes[0] : uploadRes?.[0] ?? uploadRes;
+          const url = fileInfo?.ufsUrl ?? fileInfo?.url ?? null;
+
+          if (!url) {
+            notify('Nem sikerült feltölteni a képet.', { type: 'error' });
+            setIsSavingProfile(false);
+            return;
+          }
+
+          const picRes = await fetch('/api/account/picture', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ profilePicture: url }),
+          });
+
+          if (!picRes.ok) {
+            const data = await picRes.json().catch(() => ({}));
+            notify(data.error || 'Hiba a profilkép mentése során.', { type: 'error' });
+            setIsSavingProfile(false);
+            return;
+          }
+
+          notify('Profilkép frissítve.', { type: 'success' });
+        } catch (err) {
+          console.error('Upload error', err);
+          notify('Hiba történt a kép feltöltése során.', { type: 'error' });
+          setIsSavingProfile(false);
+          return;
+        }
+      }
+
+      setProfileSaved(true);
+      setTimeout(() => setProfileSaved(false), 3000);
+    } finally {
+      setIsSavingProfile(false);
+    }
   }
 
-  const handleEmailChangeRequest = () => {
+  const handleEmailChangeRequest = async () => {
     if (!newEmail || newEmail === email) return
-    // Placeholder: replace with your own email verification logic
+    
+    const response = await fetch("/api/account/change-email", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ newEmail }),
+    })
+
+    if(!response.ok) {
+      const result = await response.json()
+      notify(result.error || "Hiba történt a megerősítő email küldése során!", { type: "error" })
+      return
+    }
+
+    switch (response.status) {
+      case 200:
+        notify("Megerősítő email elküldve!", { type: "success" })
+        break
+      case 400:
+        notify("Érvénytelen email cím!", { type: "error" })
+        break
+      case 401:
+        notify("Nincs jogosultságod megváltoztatni az email címet!", { type: "error" })
+        break
+      default:
+        notify("Hiba történt a megerősítő email küldése során!", { type: "error" })
+    }
+
     setEmailVerificationSent(true)
   }
 
-  const handleEmailVerification = () => {
-    if (!emailVerificationCode) return
-    // Placeholder: replace with your own verification logic
-    setEmail(newEmail)
-    setNewEmail("")
-    setEmailVerificationCode("")
-    setEmailVerificationSent(false)
-    setEmailDialogOpen(false)
-  }
-
-  const handlePasswordChange = () => {
+  const handlePasswordChange = async () => {
     setPasswordError("")
     setPasswordSuccess(false)
 
@@ -146,10 +267,29 @@ export default function SettingsPage() {
       return
     }
 
-    setPasswordSuccess(true)
-    setCurrentPassword("")
-    setNewPassword("")
-    setConfirmPassword("")
+    try {
+      const res = await fetch('/api/account/credentials/password', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ currentPassword, newPassword }),
+      });
+
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        setPasswordError(data.error || 'Hiba a jelszó módosítása során.');
+        notify(data.error || 'Hiba a jelszó módosítása során.', { type: 'error' });
+        return;
+      }
+
+      setPasswordSuccess(true)
+      setCurrentPassword("")
+      setNewPassword("")
+      setConfirmPassword("")
+      notify('Jelszó sikeresen megváltoztatva.', { type: 'success' });
+    } catch (err) {
+      console.error(err);
+      notify('Szerver hiba a jelszó módosítása során.', { type: 'error' });
+    }
   }
 
   return (
@@ -183,10 +323,11 @@ export default function SettingsPage() {
                       variant="outline"
                       size="sm"
                       className="gap-2 bg-transparent"
-                      onClick={() => fileInputRef.current?.click()}
+                      onClick={handleUploadProfileImage}
+                      disabled={isUploadingImage || !(profileImage instanceof File)}
                     >
                       <Camera className="h-4 w-4" />
-                      Kép feltöltése
+                      {isUploadingImage ? 'Feltöltés...' : 'Kép feltöltése'}
                     </Button>
                     {profileImage && (
                       <Button
@@ -204,7 +345,6 @@ export default function SettingsPage() {
               </CardContent>
             </Card>
 
-            {/* Personal Information Section */}
             <Card>
               <CardHeader>
                 <CardTitle>Személyes adatok</CardTitle>
@@ -234,7 +374,6 @@ export default function SettingsPage() {
                   </div>
                 </div>
 
-                {/* Email with verification */}
                 <div className="space-y-2">
                   <Label htmlFor="email">Email cím</Label>
                   <div className="flex gap-2">
@@ -267,7 +406,9 @@ export default function SettingsPage() {
                 </div>
 
                 <div className="flex items-center gap-3">
-                  <Button onClick={handleSaveProfile}>Mentés</Button>
+                  <Button onClick={handleSaveProfile} disabled={isSavingProfile}>
+                    {isSavingProfile ? "Mentés..." : "Mentés"}
+                  </Button>
                   {profileSaved && (
                     <span className="flex items-center gap-1.5 text-sm text-emerald-600 dark:text-emerald-400">
                       <Check className="h-4 w-4" />
@@ -278,7 +419,6 @@ export default function SettingsPage() {
               </CardContent>
             </Card>
 
-            {/* Password Section */}
             <Card>
               <CardHeader>
                 <CardTitle>Jelszó módosítása</CardTitle>
@@ -387,7 +527,6 @@ export default function SettingsPage() {
               </CardContent>
             </Card>
 
-            {/* Danger Zone */}
             <Card className="border-destructive/30">
               <CardHeader>
                 <CardTitle className="text-destructive">Veszélyes zóna</CardTitle>
@@ -411,8 +550,6 @@ export default function SettingsPage() {
                 : "Add meg az új email címedet. Megerősítő kódot küldünk az új címre."}
             </DialogDescription>
           </DialogHeader>
-
-          {!emailVerificationSent ? (
             <div className="space-y-4 py-4">
               <div className="space-y-2">
                 <Label htmlFor="newEmail">Új email cím</Label>
@@ -425,27 +562,6 @@ export default function SettingsPage() {
                 />
               </div>
             </div>
-          ) : (
-            <div className="space-y-4 py-4">
-              <div className="p-3 rounded-lg bg-muted/50 border border-border">
-                <p className="text-sm text-muted-foreground">
-                  Megerősítő kód elküldve: <strong className="text-foreground">{newEmail}</strong>
-                </p>
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="verificationCode">Megerősítő kód</Label>
-                <Input
-                  id="verificationCode"
-                  value={emailVerificationCode}
-                  onChange={(e) => setEmailVerificationCode(e.target.value)}
-                  placeholder="123456"
-                  className="font-mono text-center tracking-widest text-lg"
-                  maxLength={6}
-                />
-              </div>
-            </div>
-          )}
-
           <DialogFooter>
             <Button
               variant="outline"
@@ -457,21 +573,12 @@ export default function SettingsPage() {
             >
               Mégse
             </Button>
-            {!emailVerificationSent ? (
               <Button
                 onClick={handleEmailChangeRequest}
                 disabled={!newEmail || newEmail === email}
               >
-                Kód küldése
+                Küldés
               </Button>
-            ) : (
-              <Button
-                onClick={handleEmailVerification}
-                disabled={!emailVerificationCode}
-              >
-                Megerősítés
-              </Button>
-            )}
           </DialogFooter>
         </DialogContent>
       </Dialog>
