@@ -58,9 +58,9 @@ services:
     restart: always
     environment:
       NODE_ENV: production
+      WS_URL: https://ws.studifyapp.hu
     env_file:
       - .env
-      - WS_URL=https://ws.studifyapp.hu
     depends_on:
       mariadb:
         condition: service_healthy
