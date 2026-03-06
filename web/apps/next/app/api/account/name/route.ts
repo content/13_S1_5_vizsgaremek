@@ -18,14 +18,14 @@ export async function POST(request: NextRequest) {
 
     if(validateName(firstName) || validateName(lastName)) {
         return NextResponse.json(
-            { error: "Invalid name format" },
+            { error: "Helytelen névformátum" },
             { status: 400 }
         );
     }
 
     if(session.user.first_name === firstName && session.user.last_name === lastName) {
         return NextResponse.json(
-            { error: "New name cannot be the same as the current name" },
+            { error: "Az új név nem lehet ugyanaz, mint a jelenlegi név" },
             { status: 400 }
         );
     }
@@ -34,8 +34,13 @@ export async function POST(request: NextRequest) {
 
     if(!success) {
         return NextResponse.json(
-            { error: "Failed to update name" },
+            { error: "Nem sikerült frissíteni a nevet" },
             { status: 500 }
         );
     }
+
+    return NextResponse.json(
+        { message: "Név sikeresen frissítve" },
+        { status: 200 }
+    );
 }

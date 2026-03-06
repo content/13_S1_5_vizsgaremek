@@ -16,5 +16,5 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ error: "Failed to remove profile picture" }, { status: 500 });
     }
 
-    return NextResponse.json({ message: "Profile picture removed" });
+    return NextResponse.json({ message: "Profile picture removed" }, { status: 200 });
 }
