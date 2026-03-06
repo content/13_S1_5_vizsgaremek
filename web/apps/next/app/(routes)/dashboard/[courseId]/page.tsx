@@ -38,6 +38,7 @@ import {
 } from "@/hooks/use-websocket-events";
 import postTypeMappings from "@/lib/dashboard/postTypeMappings";
 import { Post, Submission } from "@studify/types";
+import { genUploader } from "uploadthing/client";
 
 type CourseSettingsForm = {
     name: string;
@@ -95,6 +96,8 @@ export default function CoursePage({ params }: { params: Promise<{ courseId: str
         autoApproveMembers: false,
         autoRejectMembers: false,
     });
+
+    const [pendingBannerFile, setPendingBannerFile] = useState<File | null>(null);
 
     const regroupMembers = (members: CourseMember[]) => {
         const nextTeachers = members.filter((member) => member.isTeacher);
@@ -408,6 +411,8 @@ export default function CoursePage({ params }: { params: Promise<{ courseId: str
             };
 
             reader.readAsDataURL(value);
+
+            setPendingBannerFile(value);
         } else {
             setSettingsForm((prev) => ({
                 ...prev,
@@ -418,6 +423,21 @@ export default function CoursePage({ params }: { params: Promise<{ courseId: str
 
     const handleSettingsSave = async (event: React.FormEvent<HTMLFormElement>) => {
         event.preventDefault();
+
+        let uploadedBannerUrl: string | null = null;
+        if (pendingBannerFile) {
+            try {
+                const uploader = genUploader();
+                const uploadRes = await uploader.uploadFiles("imageUploader", { files: [pendingBannerFile] });
+                if (uploadRes && uploadRes.length > 0) {
+                    uploadedBannerUrl = uploadRes[0]?.ufsUrl || null;
+                }
+            } catch (err) {
+                console.error('Banner upload failed:', err);
+                notify("Banner feltöltése sikertelen", { type: "error" });
+                return;
+            }
+        }
 
         const response = await fetch(`/api/courses/${courseId}/settings`, {
             method: "POST",
@@ -430,6 +450,7 @@ export default function CoursePage({ params }: { params: Promise<{ courseId: str
                 showInviteCode: settingsForm.showInviteCode,
                 studentsCanCreatePosts: settingsForm.studentsCanCreatePosts,
                 allowedStudentPostTypes: settingsForm.allowedStudentPostTypes,
+                bannerUrl: uploadedBannerUrl ? uploadedBannerUrl : (typeof settingsForm.bannerUrl === 'string' ? settingsForm.bannerUrl : ""),
                 autoApproveMembers: settingsForm.autoApproveMembers,
                 autoRejectMembers: settingsForm.autoRejectMembers,
             }),
@@ -480,6 +501,8 @@ export default function CoursePage({ params }: { params: Promise<{ courseId: str
                     type: "error",
                 });
         }
+
+        setPendingBannerFile(null);
     };
 
     const handleMemberPromoteToTeacher = async (memberId: number) => {

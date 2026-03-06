@@ -39,12 +39,16 @@ export default function RegisterVerifiedEmailPage() {
 
     const [pendingUpload, setPendingUpload] = React.useState<File | null>(null);
 
-    React.useEffect(() => {
-        if (!pendingUpload) return;
+    const [isContinueButtonDisabled, setIsContinueButtonDisabled] = React.useState(true);
+    const [isRegisterBtnDisabled, setIsRegisterBtnDisabled] = React.useState(false)
 
-        let cancelled = false;
+    const registerUser = async (event: React.FormEvent<HTMLFormElement>) => {
+        if(!token) return;
+        event.preventDefault();
 
-        const doUpload = async () => {
+        const formData = new FormData();
+
+        if (pendingUpload) {
             setIsRegisterBtnDisabled(true);
             try {
                 const { uploadFiles } = genUploader({ fetch: window.fetch });
@@ -52,46 +56,30 @@ export default function RegisterVerifiedEmailPage() {
                 const fileInfo = Array.isArray(res) ? res[0] : res?.[0] ?? res;
                 const url = fileInfo?.ufsUrl ?? fileInfo?.url ?? null;
                 const name = fileInfo?.name ?? pendingUpload.name;
-                
-                if (!cancelled) {
-                    if (url) {
-                        notify("Sikeres feltöltés!", { type: "success", description: "A profilképed sikeresen feltöltve." });
-                        setProfilePicture({ path: url, name });
-                    } else {
-                        notify("Hiba a kép feltöltése során!", { type: "error", description: "Próbáld újra később!" });
-                    }
+
+                if (url) {
+                    setProfilePicture({ path: url, name });
+                    formData.append("profile_picture", url);
+                    formData.append("profile_picture_file_name", name);
+                } else {
+                    notify("Hiba a kép feltöltése során!", { type: "error", description: "Próbáld újra később!" });
+                    setIsRegisterBtnDisabled(false);
+                    return;
                 }
             } catch (err) {
                 console.error("Uploadthing upload error:", err);
-                if (!cancelled) notify("Hiba a kép feltöltése során!", { type: "error", description: "Próbáld újra később!" });
+                notify("Hiba a kép feltöltése során!", { type: "error", description: "Próbáld újra később!" });
+                setIsRegisterBtnDisabled(false);
+                return;
             } finally {
-                if (!cancelled) {
-                    setPendingUpload(null);
-                    setIsRegisterBtnDisabled(false);
-                }
+                setPendingUpload(null);
             }
-        };
+        }
 
-        doUpload();
-
-        return () => {
-            cancelled = true;
-        };
-    }, [pendingUpload]);
-
-    const [isContinueButtonDisabled, setIsContinueButtonDisabled] = React.useState(true);
-    const [isRegisterBtnDisabled, setIsRegisterBtnDisabled] = React.useState(false)
-
-    const registerUser = async (event: React.FormEvent<HTMLFormElement>) => {
-        if(!token) return;
-        
-        event.preventDefault();
-
-        const formData = new FormData();
         formData.append("token", token);
         formData.append("password", password);
-        
-        if (profilePicture.path && profilePicture.name) {
+
+        if (profilePicture.path && profilePicture.name && !formData.has("profile_picture")) {
             formData.append("profile_picture", profilePicture.path);
             formData.append("profile_picture_file_name", profilePicture.name);
         }
@@ -106,6 +94,7 @@ export default function RegisterVerifiedEmailPage() {
                 case 201:
                     notify("Sikeres regisztráció!", { type: "success", description: "Most már bejelentkezhetsz a fiókodba." });
                     redirect("/login");
+                    return;
                 case 400:
                     const data = await response.json();
                     notify("Hiba a regisztráció során!", { type: "error", description: data.error || "Próbáld újra később!" });
@@ -120,6 +109,8 @@ export default function RegisterVerifiedEmailPage() {
         } catch (error) {
             notify("Hiba a regisztráció során!", { type: "error", description: "Próbáld újra később!" });
             console.error("Registration error:", error);
+        } finally {
+            setIsRegisterBtnDisabled(false);
         }
     }
 
@@ -199,8 +190,16 @@ export default function RegisterVerifiedEmailPage() {
                                             <ProfilePictureUploadButton
                                                 className="border-border bg-background hover:bg-accent/50 transition-colors size-32"
                                                 onUpload={(file: File) => {
+                                                   
                                                     setPendingUpload(file);
-                                                    setIsRegisterBtnDisabled(true);
+
+                                                    const reader = new FileReader();
+                                                    reader.onload = () => {
+                                                        setProfilePicture({ path: String(reader.result), name: file.name });
+                                                    };
+                                                    reader.readAsDataURL(file);
+                                                    
+                                                    setIsRegisterBtnDisabled(false);
                                                 }}
                                                 defaultImage={profilePicture.path || undefined}
                                             />

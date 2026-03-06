@@ -1,5 +1,6 @@
 import { cn } from "@/lib/utils";
 import ImageUploadButton from "./image-upload-button";
+import { Image } from "lucide-react";
 
 type BannerUploadButtonProps = {
     onUpload: (file: File) => void;
@@ -25,6 +26,7 @@ export default function BannerUploadButton({ className, onUpload, defaultImage }
 
             croppable={true} 
             aspectRatio={499 / 85}
+            icon={Image}
         />
     )
 }
