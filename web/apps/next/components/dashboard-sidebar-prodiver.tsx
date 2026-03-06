@@ -32,10 +32,9 @@ export function DashboardSidebar({ children }: { children: React.ReactNode }) {
      const [isNewCourseCreateBtnDisabled, setIsNewCourseCreateBtnDisabled] = React.useState(false);
 
      const [newCourseName, setNewCourseName] = React.useState("");
-     const [newCourseBackgroundImageUrl, setNewCourseBackgroundImageUrl] = React.useState<File | null>(null);
+     const [newCourseBackgroundImageUrl, setNewCourseBackgroundImageUrl] = React.useState<File | string | null>(null);
      const [invitationCode, setInvitationCode] = React.useState("");
 
-     // simple nav definition; active state is computed at render time using the current pathname
      const navItems = [
          { icon: Home, label: "Kurzusaid", href: "/dashboard" },
          { icon: Calendar, label: "Naptár", href: "/calendar" },
@@ -47,7 +46,8 @@ export function DashboardSidebar({ children }: { children: React.ReactNode }) {
 
          
          setIsNewCourseCreateBtnDisabled(true);
-         const newCourse = await createCourse(session.user.id, newCourseName, newCourseBackgroundImageUrl);
+         const backgroundUrl = await handleBannerUpload(newCourseBackgroundImageUrl as File) as string | null;
+         const newCourse = await createCourse(session.user.id, newCourseName, backgroundUrl);
          switch(newCourse) {
              case null:
                  console.error("Failed to create course");
@@ -68,8 +68,6 @@ export function DashboardSidebar({ children }: { children: React.ReactNode }) {
      const handleJoinCourse = async () => {
          if(!session || !session.user) return;
 
-
-         const url = await handleBannerUpload(newCourseBackgroundImageUrl as File);
          const response = await joinCourse(session.user.id, invitationCode);
 
          if (response === null) {
@@ -99,6 +97,7 @@ export function DashboardSidebar({ children }: { children: React.ReactNode }) {
              if (url) {
                  notify("Sikeres feltöltés!", { type: "success", description: "A háttérkép sikeresen feltöltve." });
                  setNewCourseBackgroundImageUrl(file);
+                 return url;
              } else {
                  notify("Hiba a kép feltöltése során!", { type: "error", description: "Próbáld újra később!" });
              }

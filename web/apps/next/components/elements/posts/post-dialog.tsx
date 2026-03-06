@@ -1,25 +1,20 @@
 "use client";
 
 
-import { format, set } from "date-fns";
+import { format } from "date-fns";
 
 import { Button } from "@/components/ui/button";
-import { ChevronDownIcon, Clock2Icon, File, Pencil, Plus, Trash2 } from "lucide-react";
+import { ChevronDownIcon, Pencil, Plus, Trash2 } from "lucide-react";
 
-import { Calendar } from "@/components/ui/calendar";
+import { useNotificationProvider } from "@/components/notification-provider";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import React, { useEffect, useState } from "react";
-import { Field, FieldGroup, FieldLabel } from "@/components/ui/field";
+import { Field, FieldLabel } from "@/components/ui/field";
 import { UploadDropzone } from "@/components/uploadthing/uploadthing";
-import { useNotificationProvider } from "@/components/notification-provider";
-import { useSession } from "next-auth/react";
 import { Course, Post, PostType } from "@studify/types";
+import { useSession } from "next-auth/react";
+import React, { useEffect, useState } from "react";
 import AttachmentUploadCard from "../attachments/attachment-upload-card";
-import { Card, CardContent, CardFooter } from "@/components/ui/card";
-import { InputOTPGroup } from "@/components/ui/input-otp";
-import { InputGroup, InputGroupAddon, InputGroupInput } from "@/components/ui/input-group-addon";
 import DateSelector from "../date-selector";
 
 const newPostModalPages = [
@@ -296,11 +291,6 @@ export default function NewPostDialog({ course, onNewPostCreated }: newPostDialo
                                     </option>
                                 ))}
                             </select>
-                            {selectedPostTypeId === postTypes.find(pt => pt.name === "ASSIGNMENT")?.id && (
-                                <p className="text-sm text-muted-foreground">
-                                    Feladat posztok
-                                </p>
-                            )}
                         </div>
                         <div className="grid gap-2">
                             <label htmlFor="post-content" className="text-sm font-medium leading-none">
