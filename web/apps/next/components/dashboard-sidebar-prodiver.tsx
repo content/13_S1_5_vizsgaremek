@@ -46,7 +46,9 @@ export function DashboardSidebar({ children }: { children: React.ReactNode }) {
 
          
          setIsNewCourseCreateBtnDisabled(true);
-         const backgroundUrl = await handleBannerUpload(newCourseBackgroundImageUrl as File) as string | null;
+         const backgroundUrl = newCourseBackgroundImageUrl instanceof File
+             ? await handleBannerUpload(newCourseBackgroundImageUrl) as string | null
+             : typeof newCourseBackgroundImageUrl === "string" ? newCourseBackgroundImageUrl : null;
          const newCourse = await createCourse(session.user.id, newCourseName, backgroundUrl);
          switch(newCourse) {
              case null:
@@ -95,15 +97,11 @@ export function DashboardSidebar({ children }: { children: React.ReactNode }) {
              const fileInfo = Array.isArray(res) ? res[0] : res?.[0] ?? res;
              const url = fileInfo?.ufsUrl ?? fileInfo?.url ?? null;
              if (url) {
-                 notify("Sikeres feltöltés!", { type: "success", description: "A háttérkép sikeresen feltöltve." });
                  setNewCourseBackgroundImageUrl(file);
                  return url;
-             } else {
-                 notify("Hiba a kép feltöltése során!", { type: "error", description: "Próbáld újra később!" });
              }
          } catch (err) {
              console.error("Banner upload error:", err);
-             notify("Hiba a kép feltöltése során!", { type: "error", description: "Próbáld újra később!" });
          } finally {
              setIsNewCourseCreateBtnDisabled(false);
          }
