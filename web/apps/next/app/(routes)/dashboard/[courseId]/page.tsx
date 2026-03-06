@@ -721,7 +721,7 @@ export default function CoursePage({ params }: { params: Promise<{ courseId: str
 
     const settingsTabs = [
         { id: "visual", label: "Megjelenés", icon: Palette },
-        { id: "general", label: "Általános", icon: PenLine },
+        // { id: "general", label: "Általános", icon: PenLine },
         { id: "permissions", label: "Jogosultságok", icon: Shield },
     ]
 
@@ -1033,7 +1033,7 @@ export default function CoursePage({ params }: { params: Promise<{ courseId: str
                                 </Card>
                             )}
 
-                            {activeSettingsTab === "general" && (
+                            {/* {activeSettingsTab === "general" && (
                                 <Card className="p-0 overflow-hidden">
                                     <div className="border-b border-border px-6 py-4">
                                         <h2 className="text-lg font-semibold">Általános beállítások</h2>
@@ -1061,7 +1061,7 @@ export default function CoursePage({ params }: { params: Promise<{ courseId: str
                                         </div>
                                     </div>
                                 </Card>
-                            )}
+                            )} */}
 
                             {/* User Permissions */}
                             {activeSettingsTab === "permissions" && (
