@@ -219,11 +219,11 @@ export function DashboardSidebar({ children }: { children: React.ReactNode }) {
                                      <p className="text-xs text-muted-foreground">{ session?.user?.email}</p>
                                  </div>
                                  <DropdownMenuSeparator />
-                                 <DropdownMenuItem asChild>
+                                 <DropdownMenuItem asChild className="cursor-pointer">
                                      <Link href="/settings">Beállítások</Link>
                                  </DropdownMenuItem>
                                  <DropdownMenuSeparator />
-                                 <DropdownMenuItem asChild>
+                                 <DropdownMenuItem asChild className="cursor-pointer">
                                      <Link href="/dashboard" onClick={() => signOut()}>Kijelentkezés</Link>
                                  </DropdownMenuItem>
                              </DropdownMenuContent>
@@ -254,7 +254,7 @@ export function DashboardSidebar({ children }: { children: React.ReactNode }) {
                              <div className="space-y-4 py-4">
                                  <div className="space-y-2">
                                      <Label htmlFor="course-code">Kurzus kódja</Label>
-                                     <Input id="course-code" placeholder="ABC123" className="font-mono" onChange={(e) => setInvitationCode(e.target.value)}/>
+                                     <Input id="course-code" placeholder="ABC123" className="font-mono" onChange={(e) => setInvitationCode(e.target.value)} maxLength={9}/>
                                  </div>
                                  <p className="text-sm text-muted-foreground">
                                      Kérd el a tanárodtól vagy társaidtól a kurzuskódot, és írd be ide. A kurzuskódok általában 6-7

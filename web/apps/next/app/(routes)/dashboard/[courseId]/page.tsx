@@ -978,6 +978,7 @@ export default function CoursePage({ params }: { params: Promise<{ courseId: str
                                                 value={settingsForm.name}
                                                 onChange={(event) => handleSettingsChange("name", event.target.value)}
                                                 placeholder="Pl: Webfejlesztés 101"
+                                                maxLength={32}
                                             />
                                         </div>
 
@@ -1009,6 +1010,7 @@ export default function CoursePage({ params }: { params: Promise<{ courseId: str
                                                         value={settingsForm.accentColor}
                                                         onChange={(event) => handleSettingsChange("accentColor", event.target.value)}
                                                         className="h-10 w-14 cursor-pointer rounded-lg border-2 border-border p-1"
+                                                        maxLength={12}
                                                     />
                                                 </div>
                                                 <Input

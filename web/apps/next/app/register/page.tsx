@@ -85,11 +85,11 @@ export default function RegisterPage() {
                             <div className="grid grid-cols-2 gap-4"> 
                                 <div className="space-y-2">
                                     <Label htmlFor="firstName">Vezetéknév</Label>
-                                    <Input id="firstName" type="text" placeholder="Vezetéknév" className="bg-background" required onChange={(e) => setFirstName(e.target.value)}/>
+                                    <Input id="firstName" type="text" placeholder="Vezetéknév" className="bg-background" required onChange={(e) => setFirstName(e.target.value)} maxLength={32}/>
                                 </div>
                                 <div className="space-y-2">
                                     <Label htmlFor="lastName">Keresztnév</Label>
-                                    <Input id="lastName" type="text" placeholder="Keresztnév" className="bg-background" required onChange={(e) => setLastName(e.target.value)}/>
+                                    <Input id="lastName" type="text" placeholder="Keresztnév" className="bg-background" required onChange={(e) => setLastName(e.target.value)} maxLength={32}/>
                                 </div>
                             </div>
                             <div className="space-y-2">

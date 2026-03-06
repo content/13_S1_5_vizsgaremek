@@ -29,7 +29,7 @@ export default function CreateNewCourseDialog(props: CreateNewCourseDialogProps)
                 <div className="space-y-4 py-4">
                     <div className="space-y-2">
                         <Label htmlFor="course-name">Kurzus neve</Label>
-                        <Input id="course-name" placeholder="Matematika" onChange={(e) => setNewCourseName(e.target.value)} />
+                        <Input id="course-name" placeholder="Matematika" onChange={(e) => setNewCourseName(e.target.value)} maxLength={32}/>
                     </div>
                     <div className="space-y-2">
                         <Label htmlFor="course-background-image-url">Kurzus háttérképe</Label>

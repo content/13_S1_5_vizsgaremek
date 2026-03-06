@@ -161,20 +161,14 @@ export default function DashboardPage() {
                 <div className="flex flex-col items-center justify-center min-h-[60vh] text-center">
                     <div className="mb-8 relative">
                         <div className="w-64 h-48 relative">
-                        <div className="absolute inset-0 border-2 border-border rounded-lg bg-card">
-                            <div className="absolute inset-4 grid grid-cols-2 grid-rows-2 gap-2">
-                            <div className="bg-muted rounded" />
-                            <div className="bg-muted rounded" />
-                            <div className="bg-muted rounded" />
-                            <div className="bg-muted rounded" />
+                            <div className="absolute inset-0 border-2 border-border rounded-lg bg-card">
+                                <div className="absolute inset-4 grid grid-cols-2 grid-rows-2 gap-2">
+                                <div className="bg-muted rounded" />
+                                <div className="bg-muted rounded" />
+                                <div className="bg-muted rounded" />
+                                <div className="bg-muted rounded" />
+                                </div>
                             </div>
-                        </div>
-                        <div className="absolute -bottom-4 left-8 w-24 h-6 bg-green-600 rounded transform -rotate-6" />
-                        <div className="absolute -bottom-2 left-12 w-20 h-4 bg-muted rounded transform rotate-3" />
-                        <div className="absolute top-4 -right-4 w-8 h-12 bg-indigo-600/50 rounded" />
-                        <div className="absolute top-8 -right-8 w-6 h-8 bg-green-900/75 rounded" />
-                        <div className="absolute bottom-12 -left-4 w-6 h-6 rounded-full bg-yellow-400" />
-                        <div className="absolute top-16 -left-2 w-4 h-4 rounded-full bg-yellow-500" />
                         </div>
                     </div>
 
@@ -213,7 +207,7 @@ export default function DashboardPage() {
                                 <div className="space-y-4 py-4">
                                     <div className="space-y-2">
                                         <Label htmlFor="course-code">Kurzus kódja</Label>
-                                        <Input id="course-code" placeholder="ABC123" className="font-mono" onChange={(e) => setInvitationCode(e.target.value)} />
+                                        <Input id="course-code" placeholder="ABC123" className="font-mono" onChange={(e) => setInvitationCode(e.target.value)} maxLength={9}/>
                                     </div>
                                     <p className="text-sm text-muted-foreground">
                                         Kérd el a tanárodtól vagy társaidtól a kurzuskódot, és írd be ide. A kurzuskódok általában 6-7

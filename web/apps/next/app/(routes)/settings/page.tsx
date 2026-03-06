@@ -105,7 +105,24 @@ export default function SettingsPage() {
     }
   }
 
-  const handleRemoveProfileImage = () => {
+  const handleRemoveProfileImage = async () => {
+    const response = await fetch(`/api/account/picture/remove`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+    });
+    
+    if (!response.ok) {
+      notify('Hiba történt a profilkép eltávolítása során.', { type: 'error' });
+    }
+
+    switch(response.status) {
+      case 200:
+        notify('Profilkép sikeresen eltávolítva.', { type: 'success' });
+        break;
+      default:
+        notify('Hiba történt a profilkép eltávolítása során.', { type: 'error' });
+    }
+
     setProfileImage(null)
   }
 
@@ -319,16 +336,18 @@ export default function SettingsPage() {
                     />
                   </div>
                   <div className="flex flex-col gap-2">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="gap-2 bg-transparent"
-                      onClick={handleUploadProfileImage}
-                      disabled={isUploadingImage || !(profileImage instanceof File)}
-                    >
-                      <Camera className="h-4 w-4" />
-                      {isUploadingImage ? 'Feltöltés...' : 'Kép feltöltése'}
-                    </Button>
+                    {profileImage instanceof File && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="gap-2 bg-transparent"
+                        onClick={handleUploadProfileImage}
+                        disabled={isUploadingImage || !(profileImage instanceof File)}
+                      >
+                        <Camera className="h-4 w-4" />
+                        {isUploadingImage ? 'Feltöltés...' : 'Kép feltöltése'}
+                      </Button>
+                    )}
                     {profileImage && (
                       <Button
                         variant="ghost"
@@ -361,6 +380,7 @@ export default function SettingsPage() {
                       value={firstName}
                       onChange={(e) => setFirstName(e.target.value)}
                       placeholder="Vezetéknév"
+                      maxLength={32}
                     />
                   </div>
                   <div className="space-y-2">
@@ -370,10 +390,22 @@ export default function SettingsPage() {
                       value={lastName}
                       onChange={(e) => setLastName(e.target.value)}
                       placeholder="Keresztnév"
+                      maxLength={32}
                     />
                   </div>
                 </div>
-
+                <Button
+                  variant="outline"
+                  className="bg-transparent"
+                  onClick={() => {
+                    setNewEmail(email)
+                    setEmailDialogOpen(true)
+                    setEmailVerificationSent(false)
+                    setEmailVerificationCode("")
+                  }}
+                >
+                  Módosítás
+                </Button>
                 <div className="space-y-2">
                   <Label htmlFor="email">Email cím</Label>
                   <div className="flex gap-2">
@@ -385,20 +417,9 @@ export default function SettingsPage() {
                         value={email}
                         readOnly
                         className="pl-9 bg-muted/50 cursor-default"
+                        maxLength={32}
                       />
                     </div>
-                    <Button
-                      variant="outline"
-                      className="bg-transparent"
-                      onClick={() => {
-                        setNewEmail(email)
-                        setEmailDialogOpen(true)
-                        setEmailVerificationSent(false)
-                        setEmailVerificationCode("")
-                      }}
-                    >
-                      Módosítás
-                    </Button>
                   </div>
                   <p className="text-xs text-muted-foreground">
                     Az email cím módosításához email megerősítés szükséges.
@@ -462,7 +483,7 @@ export default function SettingsPage() {
                       type={showNewPassword ? "text" : "password"}
                       value={newPassword}
                       onChange={(e) => setNewPassword(e.target.value)}
-                      placeholder="Legalább 8 karakter"
+                      placeholder="Új jelszó"
                     />
                     <button
                       type="button"
@@ -527,7 +548,7 @@ export default function SettingsPage() {
               </CardContent>
             </Card>
 
-            <Card className="border-destructive/30">
+            {/* <Card className="border-destructive/30">
               <CardHeader>
                 <CardTitle className="text-destructive">Veszélyes zóna</CardTitle>
                 <CardDescription>
@@ -537,7 +558,7 @@ export default function SettingsPage() {
               <CardContent>
                 <Button variant="destructive">Fiók törlése</Button>
               </CardContent>
-            </Card>
+            </Card> */}
           </div>
         </main>
         <Dialog open={emailDialogOpen} onOpenChange={setEmailDialogOpen}>
