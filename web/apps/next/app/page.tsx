@@ -104,28 +104,6 @@ export default function LandingPage() {
           </div>
         </section>
 
-        {/* Stats Section */}
-        <section className="container mx-auto px-4 py-20">
-          <div className="max-w-5xl mx-auto grid md:grid-cols-4 gap-8 text-center">
-            <div>
-              <div className="text-4xl font-bold text-green-400 mb-2">0</div>
-              <div className="text-muted-foreground">Aktív Diák</div>
-            </div>
-            <div>
-              <div className="text-4xl font-bold text-yellow-400 mb-2">0</div>
-              <div className="text-muted-foreground">Beadott Anyag</div>
-            </div>
-            <div>
-              <div className="text-4xl font-bold text-purple-400 mb-2">0</div>
-              <div className="text-muted-foreground">Létrehozott Poszt</div>
-            </div>
-            <div>
-              <div className="text-4xl font-bold text-blue-400 mb-2">0</div>
-              <div className="text-muted-foreground">Létrehozott Tanterem</div>
-            </div>
-          </div>
-        </section>
-
         {/* CTA Section */}
         <section className="container mx-auto px-4 py-20 bg-muted/30">
           <Card className="max-w-4xl mx-auto border-green-400/20 bg-gradient-to-br from-green-400/5 to-accent/5">
