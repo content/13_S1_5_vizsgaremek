@@ -54,12 +54,13 @@ services:
     build:
       context: .
       dockerfile: ./apps/websocket/Dockerfile
-    container_name: websocket_app
+    container_name: websocket
     restart: always
     environment:
       NODE_ENV: production
     env_file:
       - .env
+      - WS_URL=https://ws.studifyapp.hu
     depends_on:
       mariadb:
         condition: service_healthy

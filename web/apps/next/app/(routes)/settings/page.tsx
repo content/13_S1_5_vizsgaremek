@@ -394,18 +394,6 @@ export default function SettingsPage() {
                     />
                   </div>
                 </div>
-                <Button
-                  variant="outline"
-                  className="bg-transparent"
-                  onClick={() => {
-                    setNewEmail(email)
-                    setEmailDialogOpen(true)
-                    setEmailVerificationSent(false)
-                    setEmailVerificationCode("")
-                  }}
-                >
-                  Módosítás
-                </Button>
                 <div className="space-y-2">
                   <Label htmlFor="email">Email cím</Label>
                   <div className="flex gap-2">
@@ -420,6 +408,18 @@ export default function SettingsPage() {
                         maxLength={32}
                       />
                     </div>
+                    <Button
+                      variant="outline"
+                      className="bg-transparent"
+                      onClick={() => {
+                        setNewEmail(email)
+                        setEmailDialogOpen(true)
+                        setEmailVerificationSent(false)
+                        setEmailVerificationCode("")
+                      }}
+                    >
+                      Módosítás
+                    </Button>
                   </div>
                   <p className="text-xs text-muted-foreground">
                     Az email cím módosításához email megerősítés szükséges.
