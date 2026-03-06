@@ -47,7 +47,6 @@ export async function POST(request: Request, { params }: { params: { id: string 
         return NextResponse.json({ error: 'Failed to promote member' }, { status: 500 });
     }
 
-    // Fire websocket event for member demotion
     const updatedCourse = await getCourseById(courseId);
     if (updatedCourse) {
         const demotedMember = updatedCourse.members.find(m => m.user.id === userId);

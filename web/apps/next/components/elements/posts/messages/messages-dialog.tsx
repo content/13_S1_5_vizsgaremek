@@ -50,7 +50,6 @@ export default function PostMessagesDialog({ post, sender, receiver, children, i
                     setTimeout(() => scrollToBottom(false), 100);
                 }
             } catch (error) {
-                // silently fail
             }
         };
 

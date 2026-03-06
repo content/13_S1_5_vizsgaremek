@@ -4,6 +4,7 @@ import { createSubmission } from "@studify/database/queries/submissions/submissi
 import { getServerSession } from "next-auth";
 import { NextRequest, NextResponse } from "next/server";
 import { fireWebsocketEvent } from "@/lib/websocket/websocket";
+import { Course, Post } from "@studify/types";
 
 export async function POST(req: NextRequest) {
     const session = await getServerSession(authConfig);
@@ -26,9 +27,12 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({ error: 'Post not found' }, { status: 404 });
     }
 
-    // TODO: Get actual courseId from post and check if user is a member of that course
+    const course = session.user.courses.find((c: Course) => c.posts.some((p: Post) => p.id === postId));
+    if(!course) {
+        return NextResponse.json({ error: 'Post not found in user courses' }, { status: 404 });
+    }
 
-    const isMember = await isUserCourseMember(post.courseId, userId);
+    const isMember = await isUserCourseMember(course.id, userId);
     if(!isMember) {
         return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
     }

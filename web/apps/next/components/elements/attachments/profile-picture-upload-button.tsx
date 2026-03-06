@@ -1,5 +1,6 @@
 import { cn } from "@/lib/utils";
 import ImageUploadButton from "./image-upload-button";
+import { CircleUserRound } from "lucide-react";
 
 type ProfilePictureUploadButtonProps = {
     onUpload: (file: File) => void;
@@ -20,12 +21,13 @@ export default function ProfilePictureUploadButton({ className, onUpload, defaul
 
                     buttonOverlay: "w-full rounded-full sm:size-32",
                     uploadButton: "w-full text-center",
+                    icon: "text-center",
                 }
             }
 
             croppable={true} 
             aspectRatio={1}
-
+            icon={CircleUserRound}
         />
     )
 }

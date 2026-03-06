@@ -9,7 +9,7 @@ const TwoFactorInputs = ({ values, onChange }: TwoFactorInputsProps) => {
   const inputsRef = useRef<(HTMLInputElement | null)[]>([]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>, index: number) => {
-    const value = e.target.value.replace(/\D/, ""); // only digits
+    const value = e.target.value.replace(/\D/, "");
     onChange(index, value);
 
     if (value && index < inputsRef.current.length - 1) {

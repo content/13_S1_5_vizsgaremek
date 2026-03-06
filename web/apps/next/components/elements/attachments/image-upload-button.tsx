@@ -1,7 +1,7 @@
 'use client';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
-import { CircleUserRound, ImageUpIcon, SquarePen } from 'lucide-react';
+import { CircleUserRound, ImageUpIcon, LucideIcon, SquarePen } from 'lucide-react';
 import Image from 'next/image';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { ImageCropper } from './image-cropper';
@@ -17,6 +17,7 @@ interface BaseProps {
         uploadButton?: string;
         icon?: string;
     };
+    icon: LucideIcon;
 }
 
 export type ImageUploadButtonProps =
@@ -31,7 +32,7 @@ const defaultStyles = {
     icon: 'size-12 text-center',
 };
 
-export default function ImageUploadButton({ className, onUpload, defaultImage, croppable = true, aspectRatio, styles }: ImageUploadButtonProps) {
+export default function ImageUploadButton({ className, onUpload, defaultImage, croppable = true, aspectRatio, styles, icon }: ImageUploadButtonProps) {
     const mergedStyles = { 
         container: cn(defaultStyles.container, styles?.container),
         imageWrapper: cn(defaultStyles.imageWrapper, styles?.imageWrapper),
@@ -47,10 +48,17 @@ export default function ImageUploadButton({ className, onUpload, defaultImage, c
     const previewRef = useRef<string | null>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
     const tempFileRef = useRef<File | null>(null);
+    const cropConfirmedRef = useRef(false);
 
     const [fileName, setFileName] = useState<string | null>(null);
     const [previewUrl, setPreviewUrl] = useState<string | null>(defaultImage || null);
     const [cropperOpen, setCropperOpen] = useState(false);
+
+    useEffect(() => {
+        if (previewRef.current) return;
+        setFileName(null);
+        setPreviewUrl(defaultImage || null);
+    }, [defaultImage]);
 
     const handleButtonClick = useCallback(() => {
         fileInputRef.current?.click();
@@ -99,19 +107,30 @@ export default function ImageUploadButton({ className, onUpload, defaultImage, c
 
     const handleCropperOpenChange = useCallback((open: boolean) => {
         setCropperOpen(open);
-        if (!open && tempFileRef.current) {
-            if (previewRef.current) {
-                try { URL.revokeObjectURL(previewRef.current); } catch {}
+        
+        if (!open) {
+            if (cropConfirmedRef.current) {
+                
+                cropConfirmedRef.current = false;
+                tempFileRef.current = null;
+                if (fileInputRef.current) fileInputRef.current.value = '';
+                return;
             }
 
-            previewRef.current = null;
+            if (tempFileRef.current) {
+                if (previewRef.current) {
+                    try { URL.revokeObjectURL(previewRef.current); } catch {}
+                }
 
-            setPreviewUrl(defaultImage || null);
-            setFileName(null);
+                previewRef.current = null;
 
-            if (fileInputRef.current) fileInputRef.current.value = '';
+                setPreviewUrl(defaultImage || null);
+                setFileName(null);
 
-            tempFileRef.current = null;
+                if (fileInputRef.current) fileInputRef.current.value = '';
+
+                tempFileRef.current = null;
+            }
         }
     }, [defaultImage]);
 
@@ -130,6 +149,8 @@ export default function ImageUploadButton({ className, onUpload, defaultImage, c
             setPreviewUrl(dataUri);
             setFileName(file.name);
 
+            // Mark that the crop was confirmed so the close handler won't clear the new preview.
+            cropConfirmedRef.current = true;
             tempFileRef.current = null;
 
             onUpload(file);
@@ -148,7 +169,7 @@ export default function ImageUploadButton({ className, onUpload, defaultImage, c
 
     return (
         <div className={cn(mergedStyles.container, className)}>
-            <div className='relative flex flex-col items-center gap-2 align-top'>
+            <div className='relative flex flex-col items-center justify-center gap-2 h-full w-full overflow-hidden'>
                 <div
                     className={mergedStyles.imageWrapper}
                     aria-label={previewUrl ? 'Előnézet' : 'Alapértelmezett kép'}
@@ -160,10 +181,14 @@ export default function ImageUploadButton({ className, onUpload, defaultImage, c
                             alt='Előnézet'
                             width={64}
                             height={64}
+                            unoptimized
                         />
                     ) : (
-                        <div aria-hidden='true'>
-                            <CircleUserRound className='opacity-60 dark:invert-0' size={64} strokeWidth={2} />
+                        <div className='w-full' aria-hidden='true'>
+                            {(() => {
+                                const IconComponent = icon ?? CircleUserRound;
+                                return <IconComponent className='w-full opacity-60 dark:invert-0' size={64} strokeWidth={2} />;
+                            })()}
                         </div>
                     )}
                 </div>

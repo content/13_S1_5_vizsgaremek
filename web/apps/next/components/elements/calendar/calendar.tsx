@@ -150,8 +150,7 @@ export function MonthlyView({ baseDate, posts }: MonthlyViewProps) {
 
     const start = startOfWeekMonday(firstDay);
 
-    // Calculate last visible Sunday (based on Monday-start weeks)
-    const lastDayWeekIndex = (lastDay.getDay() + 6) % 7; // Monday=0 ... Sunday=6
+    const lastDayWeekIndex = (lastDay.getDay() + 6) % 7;
     const end = addDays(lastDay, 6 - lastDayWeekIndex);
 
     const totalDays =

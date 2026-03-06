@@ -75,19 +75,16 @@ export function DashboardSidebar({ children }: { children: React.ReactNode }) {
             return;
         }
 
-        // joinCourse returns either a Course (on success) or a JSON-like message object for "request sent"
         if (typeof response === 'object' && 'message' in (response as any)) {
             notify("Sikeresen kérelmezted a csatlakozást a kurzushoz!", { type: "success" });
             setJoinDialogOpen(false);
             return;
         }
 
-        // Otherwise assume a Course object was returned
         notify("Sikeresen csatlakoztál a kurzushoz!", { type: "success" });
         setJoinDialogOpen(false);
     }
 
-    // Upload banner image programmatically using Uploadthing client
     const handleBannerUpload = async (file: File) => {
         setIsNewCourseCreateBtnDisabled(true);
         try {

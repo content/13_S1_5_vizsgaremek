@@ -43,7 +43,7 @@ function EmailChangeContent() {
                     return;
                 }
 
-                const response = await fetch("/api/account/change-email", {
+                const response = await fetch("/api/account/verify/change-email", {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
                     body: JSON.stringify({ token: rawToken }),
@@ -70,7 +70,7 @@ function EmailChangeContent() {
         };
 
         resolveAndVerify();
-    }, [searchParams]); // eslint-disable-line react-hooks/exhaustive-deps
+    }, [searchParams]);
 
     if (isSolving) {
         return (

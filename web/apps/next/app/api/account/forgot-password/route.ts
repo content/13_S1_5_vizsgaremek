@@ -15,7 +15,6 @@ export async function POST(request: NextRequest) {
     const user = await getUser(email);
 
     if(!user) {
-        // To prevent email enumeration, we return a success response even if the user doesn't exist
         return NextResponse.json({ success: true });
     }
 
