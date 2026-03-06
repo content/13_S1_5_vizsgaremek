@@ -119,14 +119,10 @@ export default function DashboardPage() {
             const fileInfo = Array.isArray(res) ? res[0] : res?.[0] ?? res;
             const url = fileInfo?.ufsUrl ?? fileInfo?.url ?? null;
             if (url) {
-                notify("Sikeres feltöltés!", { type: "success", description: "A háttérkép sikeresen feltöltve." });
                 setNewCourseBackgroundImageUrl(url);
-            } else {
-                notify("Hiba a kép feltöltése során!", { type: "error", description: "Próbáld újra később!" });
             }
         } catch (err) {
             console.error("Banner upload error:", err);
-            notify("Hiba a kép feltöltése során!", { type: "error", description: "Próbáld újra később!" });
         } finally {
             setIsNewCourseCreateBtnDisabled(false);
         }
@@ -178,18 +174,6 @@ export default function DashboardPage() {
                     </p>
 
                     <div className="flex flex-col sm:flex-row gap-3">
-                        
-                        <CreateNewCourseDialog 
-                            createDialogOpen={createDialogOpen}
-                            setCreateDialogOpen={setCreateDialogOpen}
-                            newCourseName={newCourseName}
-                            setNewCourseName={setNewCourseName}
-                            newCourseBackgroundImageUrl={newCourseBackgroundImageUrl}
-                            isNewCourseCreateBtnDisabled={isNewCourseCreateBtnDisabled}
-                            handleBannerUpload={handleBannerUpload}
-                            handleCreateCourse={handleCreateCourse}    
-                        />
-                    
                         <Dialog open={joinDialogOpen} onOpenChange={setJoinDialogOpen}>
                             <DialogTrigger asChild>
                                 <Button className="gap-2 bg-green-500 hover:bg-green-600">
